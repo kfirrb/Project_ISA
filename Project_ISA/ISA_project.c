@@ -49,11 +49,11 @@ unsigned short get_byte(unsigned short num, int pos)
 Command line_to_command(unsigned int inst) // create new Command struct from code line
 {
 	Command cmd;
-	cmd.opcode = get_byte(inst, 6)+get_byte(inst,7);
+	cmd.opcode = get_byte(inst, 6)*16+get_byte(inst,7);
 	cmd.rd = get_byte(inst, 5);
 	cmd.rs = get_byte(inst, 4);
 	cmd.rt = get_byte(inst, 3);
-	cmd.immiediate = get_byte(inst, 2) + get_byte(inst, 1) + get_byte(inst, 0);
+	cmd.immiediate = (get_byte(inst, 2)*16*16) + (get_byte(inst, 1)*16) + get_byte(inst, 0);
 	return cmd;
 }
 
@@ -70,4 +70,38 @@ void add(short * regs, Command cmd)
 void sub(short* regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] - regs[cmd.rt];
+}
+
+// and command.
+void and(short * regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] & regs[cmd.rt];
+}
+
+// or command.
+void or (short * regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] | regs[cmd.rt];
+}
+
+// sll command.
+void sll(short * regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] << regs[cmd.rt];
+}
+
+//sra command
+void sra(short* regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
+}
+
+//srl command*************
+
+//beq command
+void beq(short* regs, Command cmd, int pc)
+{
+	if (regs[cmd.rs]==regs[cmd.rt])
+		pc=get_byte(cmd.rd,0)+ (get_byte(cmd.rd, 1)*16)+ (get_byte(cmd.rd, 1) * 16*15)
+
 }
