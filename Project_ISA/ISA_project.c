@@ -6,6 +6,15 @@
 #define MAX_LINE_SIZE 500
 #define MEM_SIZE 4096
 
+//defined the struct that will help us cross the river of the project
+typedef struct _command {
+	unsigned short opcode;
+	unsigned short rd;
+	unsigned short rs;
+	unsigned short rt;
+	unsigned short immiediate;
+}Command;
+
 // a function that reads memin.text and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned short* mem, char * address)
 {
@@ -27,4 +36,32 @@ int read_memin(unsigned short* mem, char * address)
 	}
 	fclose(fp); // close file
 	return 0;
+}
+
+
+
+// this function creates a struct Command from a string in memory
+Command line_to_command(unsigned int inst) // create new Command struct from code line
+{
+	Command cmd;
+	cmd.opcode = get_byte(inst, 3);
+	cmd.rd = get_byte(inst, 2);
+	cmd.rs = get_byte(inst, 1);
+	cmd.rt = get_byte(inst, 0);
+	return cmd;
+}
+
+
+//basic commands and instructions
+
+//add command
+void add(short * regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] + regs[cmd.rt];
+}
+
+//sub command
+void sub(short* regs, command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] - regs[cmd.rt];
 }
