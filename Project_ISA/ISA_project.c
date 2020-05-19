@@ -16,7 +16,7 @@ typedef struct _command {
 }Command;
 
 // a function that reads memin.text and store it's content into an array.returns 1 if error occured, else returns 0.
-int read_memin(unsigned short* mem, char * address)
+int read_memin(unsigned long* mem, char * address)
 {
 	FILE *fp = fopen(address, "r"); // open memin file
 	if (!fp) { // handle error
@@ -38,16 +38,22 @@ int read_memin(unsigned short* mem, char * address)
 	return 0;
 }
 
-
+// this function extracts one byte from number
+unsigned short get_byte(unsigned short num, int pos)
+{
+	unsigned short mask = 0x1f << (pos * 4);
+	return (num & mask) >> (pos * 4);
+}
 
 // this function creates a struct Command from a string in memory
 Command line_to_command(unsigned int inst) // create new Command struct from code line
 {
 	Command cmd;
-	cmd.opcode = get_byte(inst, 3);
-	cmd.rd = get_byte(inst, 2);
-	cmd.rs = get_byte(inst, 1);
-	cmd.rt = get_byte(inst, 0);
+	cmd.opcode = get_byte(inst, 6)*16+get_byte(inst,7);
+	cmd.rd = get_byte(inst, 5);
+	cmd.rs = get_byte(inst, 4);
+	cmd.rt = get_byte(inst, 3);
+	cmd.immiediate = (get_byte(inst, 2)*16*16) + (get_byte(inst, 1)*16) + get_byte(inst, 0);
 	return cmd;
 }
 
@@ -61,7 +67,41 @@ void add(short * regs, Command cmd)
 }
 
 //sub command
-void sub(short* regs, command cmd)
+void sub(short* regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] - regs[cmd.rt];
+}
+
+// and command.
+void and(short * regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] & regs[cmd.rt];
+}
+
+// or command.
+void or (short * regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] | regs[cmd.rt];
+}
+
+// sll command.
+void sll(short * regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] << regs[cmd.rt];
+}
+
+//sra command
+void sra(short* regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
+}
+
+//srl command*************
+
+//beq command
+void beq(short* regs, Command cmd, int pc)
+{
+	if (regs[cmd.rs]==regs[cmd.rt])
+		pc=get_byte(cmd.rd,0)+ (get_byte(cmd.rd, 1)*16)+ (get_byte(cmd.rd, 1) * 16*15)
+
 }
