@@ -101,7 +101,42 @@ void sra(short* regs, Command cmd)
 //beq command
 void beq(short* regs, Command cmd, int pc)
 {
-	if (regs[cmd.rs]==regs[cmd.rt])
-		pc=get_byte(cmd.rd,0)+ (get_byte(cmd.rd, 1)*16)+ (get_byte(cmd.rd, 1) * 16*15)
-
+	if (regs[cmd.rs] == regs[cmd.rt])
+		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 }
+
+//bne command
+void bne(short* regs, Command cmd, int pc)
+{
+	if (regs[cmd.rs] != regs[cmd.rt])
+		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+}
+
+//blt command
+void blt(short* regs, Command cmd, int pc)
+{
+	if (regs[cmd.rs] < regs[cmd.rt])
+		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+}
+
+//bgt command
+void bgt(short* regs, Command cmd, int pc)
+{
+	if (regs[cmd.rs] > regs[cmd.rt])
+		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+}
+
+//ble command
+void ble(short* regs, Command cmd, int pc)
+{
+	if (regs[cmd.rs] <= regs[cmd.rt])
+		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+}
+
+//bge command
+void bge(short* regs, Command cmd, int pc)
+{
+	if (regs[cmd.rs] >= regs[cmd.rt])
+		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+}
+
