@@ -293,7 +293,7 @@ int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
 	int neg_to_pos(signed int num)
 	{
 		num = abs(num);
-		signed int mask = 0xffff;
+		signed int mask = 0xffffffff;
 		num = num ^ mask; // invert all bits
 		num++; // add 1 as in 2's comp
 		return num;
