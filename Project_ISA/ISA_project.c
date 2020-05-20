@@ -99,52 +99,64 @@ void sra(short* regs, Command cmd)
 //srl command*************
 
 //beq command
-void beq(short* regs, Command cmd, int pc)
+int beq(short* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] == regs[cmd.rt])
-		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		pc++;
 }
 
 //bne command
-void bne(short* regs, Command cmd, int pc)
+int bne(short* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] != regs[cmd.rt])
-		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		pc++;
 }
 
 //blt command
-void blt(short* regs, Command cmd, int pc)
+int blt(short* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] < regs[cmd.rt])
-		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		pc++;
 }
 
 //bgt command
-void bgt(short* regs, Command cmd, int pc)
+int bgt(short* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] > regs[cmd.rt])
-		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		pc++;
 }
 
 //ble command
-void ble(short* regs, Command cmd, int pc)
+int ble(short* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] <= regs[cmd.rt])
-		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		pc++;
 }
 
 //bge command
-void bge(short* regs, Command cmd, int pc)
+int bge(short* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] >= regs[cmd.rt])
-		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		pc++;
 }
 
 //jal command
-void jal(short* regs, Command cmd, int pc)
+int jal(short* regs, Command cmd, int pc)
 {
 	regs[15] = pc + 1;
-	pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 }
 
 //lw command
@@ -153,8 +165,8 @@ void lw(short * regs, Command cmd, unsigned short * mem)
 	regs[cmd.rd] = mem[regs[cmd.rs] + regs[cmd.rt]];
 }
 
-// this function executes the sw command.
-void sw(short * regs, Command cmd, int imm, unsigned short * mem)
+//sw command.
+void sw(short * regs, Command cmd, unsigned short * mem)
 {
 	mem[regs[cmd.rs] + regs[cmd.rt]] = regs[cmd.rd];
 }
@@ -172,45 +184,105 @@ void sw(short * regs, Command cmd, int imm, unsigned short * mem)
 int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
 	switch (cmd.opcode)
 	{
-	case 0: //add operation
+	case 0: //add opcode
 	{
 		add(regs, cmd);
 		regs[0] = 0; // make sure $zero is zero
 		pc++;
 		break;
 	}
-	case 1: //sub operation
+	case 1: //sub opcode
 	{
 		sub(regs, cmd);
 		regs[0] = 0;
 		pc++;
 		break;
 	}
-	case 2: //and operation
+	case 2: //and opcode
 	{
 		and (regs, cmd);
 		regs[0] = 0;
 		pc++;
 		break;
 	}
-	case 3: //or operation
+	case 3://or opcode
 	{
 		or (regs, cmd);
 		regs[0] = 0;
 		pc++;
 		break;
 	}
-	case 4: //sll operation
+	case 4: //sll opcode
 	{
 		sll(regs, cmd);
 		regs[0] = 0;
 		pc++;
 		break;
 	}
-	case 5: //sra operation
+	case 5: //sra opcode
 	{
 		sra(regs, cmd);
 		regs[0] = 0;
 		pc++;
 		break;
+	}
+	case 6: //srl opcode***************
+	{
+	}
+	case 7: //beq opcode
+	{
+		pc = beq(regs, cmd, pc);
+		regs[0] = 0;
+		break;
+	}
+	case 8: //bne opcode
+	{
+		pc = bne(regs, cmd, pc);
+		regs[0] = 0;
+		break;
+	}
+	case 9: //blt opcode
+	{
+		pc = blt(regs, cmd, pc);
+		regs[0] = 0;
+		break;
+	}
+	case 10: //bgt opcode
+	{
+		pc = bgt(regs, cmd, pc);
+		regs[0] = 0;
+		break;
+	}
+	case 11: //ble opcode
+	{
+		pc = ble(regs, cmd, pc);
+		regs[0] = 0;
+		break;
+	}
+	case 12: //bge opcode
+	{
+		pc = bge(regs, cmd, pc);
+		regs[0] = 0;
+		break;
+	}
+	case 13: //jal opcode
+	{
+		pc = jal(regs, cmd, pc);
+		regs[0] = 0;
+		break;
+	}
+	case 14: //lw opcode
+	{
+		lw(regs, cmd, mem);
+		regs[0] = 0;
+		pc++;
+		break;
+	}
+	case 15: //sw opcode
+	{
+		sw(regs, cmd, mem);
+		regs[0] = 0;
+		pc++;
+		break;
+	}
 	}
