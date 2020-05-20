@@ -166,3 +166,51 @@ void sw(short * regs, Command cmd, int imm, unsigned short * mem)
 // out command
 
 //halt command
+
+//excution function for all the relevent opcode
+// after every excution we have to check that $zero doesn't change his value 
+int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
+	switch (cmd.opcode)
+	{
+	case 0: //add operation
+	{
+		add(regs, cmd);
+		regs[0] = 0; // make sure $zero is zero
+		pc++;
+		break;
+	}
+	case 1: //sub operation
+	{
+		sub(regs, cmd);
+		regs[0] = 0;
+		pc++;
+		break;
+	}
+	case 2: //and operation
+	{
+		and (regs, cmd);
+		regs[0] = 0;
+		pc++;
+		break;
+	}
+	case 3: //or operation
+	{
+		or (regs, cmd);
+		regs[0] = 0;
+		pc++;
+		break;
+	}
+	case 4: //sll operation
+	{
+		sll(regs, cmd);
+		regs[0] = 0;
+		pc++;
+		break;
+	}
+	case 5: //sra operation
+	{
+		sra(regs, cmd);
+		regs[0] = 0;
+		pc++;
+		break;
+	}
