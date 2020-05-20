@@ -46,10 +46,10 @@ unsigned short get_byte(unsigned short num, int pos)
 }
 
 // this function creates a struct Command from a string in memory
-Command line_to_command(unsigned int inst) // create new Command struct from code line
+Command line_to_command(unsigned int inst)
 {
 	Command cmd;
-	cmd.opcode = get_byte(inst, 6)*16+get_byte(inst,7);
+	cmd.opcode = (get_byte(inst, 7)*16)+get_byte(inst,6);
 	cmd.rd = get_byte(inst, 5);
 	cmd.rs = get_byte(inst, 4);
 	cmd.rt = get_byte(inst, 3);
@@ -140,3 +140,29 @@ void bge(short* regs, Command cmd, int pc)
 		pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 }
 
+//jal command
+void jal(short* regs, Command cmd, int pc)
+{
+	regs[15] = pc + 1;
+	pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+}
+
+//lw command
+void lw(short * regs, Command cmd, unsigned short * mem)
+{
+	regs[cmd.rd] = mem[regs[cmd.rs] + regs[cmd.rt]];
+}
+
+// this function executes the sw command.
+void sw(short * regs, Command cmd, int imm, unsigned short * mem)
+{
+	mem[regs[cmd.rs] + regs[cmd.rt]] = regs[cmd.rd];
+}
+
+//reti command
+
+//in command
+
+// out command
+
+//halt command
