@@ -286,3 +286,15 @@ int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
 		break;
 	}
 	}
+	return pc;
+}
+
+	//A function that converts a negative number to positive in 2's compliment
+	int neg_to_pos(signed int num)
+	{
+		num = abs(num);
+		signed int mask = 0xffff;
+		num = num ^ mask; // invert all bits
+		num++; // add 1 as in 2's comp
+		return num;
+	}
