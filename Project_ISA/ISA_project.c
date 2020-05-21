@@ -361,3 +361,22 @@ int neg_to_pos(signed int num)
 	num++; // add 1 as in 2's comp
 	return num;
 }
+
+// this function creates regout file
+void create_regout(int regs[], char file_name[]) {
+	FILE* fp_regout;
+
+	fp_regout = fopen(file_name, "w"); // open new file
+	if (fp_regout == NULL) // handle error
+	{
+		printf("error opening file");
+		exit(1);
+	}
+
+	for (int i = 2; i <= 15; i++) // print registers to file
+	{
+		fprintf(fp_regout, "%X\n", regs[i]);
+	}
+
+	fclose(fp_regout); // close file
+}
