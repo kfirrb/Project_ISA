@@ -3,8 +3,9 @@
 #include <string.h>
 #include <stdint.h>
 
-#define REGISTER_SIZE 32
-#define MAX_LINE_SIZE 500
+#define IO_REGISTER_SIZE 17
+#define REGISTER_SIZE 16
+#define MAX_LINE_SIZE 8
 #define MEM_SIZE 4096
 
 //defined the struct that will help us cross the river of the project
@@ -18,10 +19,17 @@ typedef struct _command {
 
 int main(int argc, char* argv[])
 {
-	int regs[REGISTER_SIZE];// initialize register
-	init_regs(regs);
-
+	int regs[REGISTER_SIZE] = { 0 };// initialize register
+	int io_regs[IO_REGISTER_SIZE];// initialize input output register
 	int pc = 0; // initialize pc
+
+	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
+	if (read_memin(mem, argv[1]) != 0) //open memin
+	{
+		printf("An Error Occured - Exiting Simulator.\n");
+		exit(1);
+	}
+
 }
 // a function that reads memin.text and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned int* mem, char * address)
@@ -326,11 +334,13 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	case 17://in command
 	{
 		in(io_regs, regs, cmd);
+		pc++;
 		break;
 	}
 	case 18://out command
 	{
 		out(io_regs, regs, cmd);
+		pc++;
 		break;
 	}
 	case 19: //halt command, we need to exit simulator
@@ -351,3 +361,85 @@ int neg_to_pos(signed int num)
 	num++; // add 1 as in 2's comp
 	return num;
 }
+
+// this function creates regout file
+void create_regout(int regs[], char file_name[]) {
+	FILE* fp_regout;
+
+	fp_regout = fopen(file_name, "w"); // open new file
+	if (fp_regout == NULL) // handle error
+	{
+		printf("error opening file");
+		exit(1);
+	}
+
+	for (int i = 2; i <= 15; i++) // print registers to file
+	{
+		fprintf(fp_regout, "%08X\n", regs[i]);
+	}
+
+	fclose(fp_regout); // close file
+}
+
+// this function creates memout file
+void create_memout(unsigned short * mem, char file_name[]) {
+	FILE* fp_memout;
+	fp_memout = fopen(file_name, "w"); // open new file
+	if (fp_memout == NULL) // handle error
+	{
+		printf("error opening file");
+		exit(1);
+	}
+
+	for (int i = 0; i < MEM_SIZE; i++) // print memory to file
+	{
+		fprintf(fp_memout, "%08X\n", *mem);
+		mem++;
+	}
+
+	fclose(fp_memout); // close file
+}
+
+// this function prepares a string to print to trace file
+void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned int inst,int imm)
+{
+	int i;
+	char inst_line[8];
+	char pc_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
+	sprintf(pc_char, "%08X", pc);
+	sprintf(inst_line, "%08X", inst);
+	sprintf(line_for_trace, pc_char); //add pc to line
+	sprintf(line_for_trace + strlen(line_for_trace), " ");
+	sprintf(line_for_trace + strlen(line_for_trace), inst_line); //add opcode to line
+	sprintf(line_for_trace + strlen(line_for_trace), " ");
+
+	for (i = 0; i < 15; i++) { //add registers to line
+		int temp_reg = 0;
+		if (i == 1)// for imm
+		{
+			sprintf(temp_reg_char, "%08X", sign_extend(imm));//change to hex
+			sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);//add to line
+			sprintf(line_for_trace + strlen(line_for_trace), " ");
+		}
+		if (regs[i] < 0)
+			temp_reg = neg_to_pos(regs[i]);
+		else
+			temp_reg = regs[i];
+		sprintf(temp_reg_char, "%08X", temp_reg);//change to hex
+		sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);//add to line
+		sprintf(line_for_trace + strlen(line_for_trace), " ");
+	}
+
+	//add last register to line (without space at the end)
+	int temp_reg = 0;
+	if (regs[i] < 0)
+		temp_reg = neg_to_pos(regs[i]);
+	else
+		temp_reg = regs[i];
+	sprintf(temp_reg_char, "%.8X", temp_reg);
+	sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);
+}
+
+// create function that will colect data for hwregtrace
+void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int pc, unsigned int inst, int imm)
