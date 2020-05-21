@@ -375,8 +375,27 @@ void create_regout(int regs[], char file_name[]) {
 
 	for (int i = 2; i <= 15; i++) // print registers to file
 	{
-		fprintf(fp_regout, "%X\n", regs[i]);
+		fprintf(fp_regout, "%08X\n", regs[i]);
 	}
 
 	fclose(fp_regout); // close file
+}
+
+// this function creates memout file
+void create_memout(unsigned short * mem, char file_name[]) {
+	FILE* fp_memout;
+	fp_memout = fopen(file_name, "w"); // open new file
+	if (fp_memout == NULL) // handle error
+	{
+		printf("error opening file");
+		exit(1);
+	}
+
+	for (int i = 0; i < MEM_SIZE; i++) // print memory to file
+	{
+		fprintf(fp_memout, "%08X\n", *mem);
+		mem++;
+	}
+
+	fclose(fp_memout); // close file
 }
