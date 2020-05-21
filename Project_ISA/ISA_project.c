@@ -399,3 +399,47 @@ void create_memout(unsigned short * mem, char file_name[]) {
 
 	fclose(fp_memout); // close file
 }
+
+// this function prepares a string to print to trace file
+void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned int inst,int imm)
+{
+	int i;
+	char inst_line[8];
+	char pc_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
+	sprintf(pc_char, "%08X", pc);
+	sprintf(inst_line, "%08X", inst);
+	sprintf(line_for_trace, pc_char); //add pc to line
+	sprintf(line_for_trace + strlen(line_for_trace), " ");
+	sprintf(line_for_trace + strlen(line_for_trace), inst_line); //add opcode to line
+	sprintf(line_for_trace + strlen(line_for_trace), " ");
+
+	for (i = 0; i < 15; i++) { //add registers to line
+		int temp_reg = 0;
+		if (i == 1)// for imm
+		{
+			sprintf(temp_reg_char, "%08X", sign_extend(imm));//change to hex
+			sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);//add to line
+			sprintf(line_for_trace + strlen(line_for_trace), " ");
+		}
+		if (regs[i] < 0)
+			temp_reg = neg_to_pos(regs[i]);
+		else
+			temp_reg = regs[i];
+		sprintf(temp_reg_char, "%08X", temp_reg);//change to hex
+		sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);//add to line
+		sprintf(line_for_trace + strlen(line_for_trace), " ");
+	}
+
+	//add last register to line (without space at the end)
+	int temp_reg = 0;
+	if (regs[i] < 0)
+		temp_reg = neg_to_pos(regs[i]);
+	else
+		temp_reg = regs[i];
+	sprintf(temp_reg_char, "%.8X", temp_reg);
+	sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);
+}
+
+// create function that will colect data for hwregtrace
+void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int pc, unsigned int inst, int imm)
