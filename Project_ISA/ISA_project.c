@@ -172,16 +172,30 @@ void sw(short * regs, Command cmd, unsigned short * mem)
 }
 
 //reti command
+int reti(short* io_regs, int pc)
+{
+	return pc = io_regs[7];
+}
 
 //in command
+void in(short* io_regs, short* regs, Command cmd)
+{
+	if (regs[cmd.rs] + regs[cmd.rt]<18)
+		regs[cmd.rd] = io_regs[regs[cmd.rs] + regs[cmd.rt]];
+}
 
 // out command
+void out(short* io_regs, short* regs, Command cmd)
+{
+	if (regs[cmd.rs] + regs[cmd.rt] < 18)
+		io_regs[regs[cmd.rs] + regs[cmd.rt]]= regs[cmd.rd];
+}
 
 //halt command
 
 //excution function for all the relevent opcode
 // after every excution we have to check that $zero doesn't change his value 
-int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
+int execution(short regs[], short io_regs[], int pc, Command cmd, unsigned short * mem) {
 	switch (cmd.opcode)
 	{
 	case 0: //add opcode
@@ -283,6 +297,26 @@ int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
 		sw(regs, cmd, mem);
 		regs[0] = 0;
 		pc++;
+		break;
+	}
+	case 16: //reti command
+	{
+		reti(io_regs, pc);
+		break;
+	}
+	case 17://in command
+	{
+		in(io_regs, regs, cmd);
+		break;
+	}
+	case 18://out command
+	{
+		out(io_regs, regs, cmd);
+		break;
+	}
+	case 19: //halt command, we need to exit simulator
+	{
+		pc = -1; 
 		break;
 	}
 	}
