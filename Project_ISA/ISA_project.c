@@ -3,8 +3,9 @@
 #include <string.h>
 #include <stdint.h>
 
-#define REGISTER_SIZE 32
-#define MAX_LINE_SIZE 500
+#define IO_REGISTER_SIZE 17
+#define REGISTER_SIZE 16
+#define MAX_LINE_SIZE 8
 #define MEM_SIZE 4096
 
 //defined the struct that will help us cross the river of the project
@@ -18,10 +19,17 @@ typedef struct _command {
 
 int main(int argc, char* argv[])
 {
-	int regs[REGISTER_SIZE];// initialize register
-	init_regs(regs);
-
+	int regs[REGISTER_SIZE] = { 0 };// initialize register
+	int io_regs[IO_REGISTER_SIZE];// initialize input output register
 	int pc = 0; // initialize pc
+
+	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
+	if (read_memin(mem, argv[1]) != 0) //open memin
+	{
+		printf("An Error Occured - Exiting Simulator.\n");
+		exit(1);
+	}
+
 }
 // a function that reads memin.text and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned int* mem, char * address)
@@ -326,11 +334,13 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	case 17://in command
 	{
 		in(io_regs, regs, cmd);
+		pc++;
 		break;
 	}
 	case 18://out command
 	{
 		out(io_regs, regs, cmd);
+		pc++;
 		break;
 	}
 	case 19: //halt command, we need to exit simulator
