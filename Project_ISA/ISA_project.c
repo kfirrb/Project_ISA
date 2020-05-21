@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #define REGISTER_SIZE 32
 #define MAX_LINE_SIZE 500
@@ -8,15 +9,22 @@
 
 //defined the struct that will help us cross the river of the project
 typedef struct _command {
-	unsigned short opcode;
-	unsigned short rd;
-	unsigned short rs;
-	unsigned short rt;
-	unsigned short immiediate;
+	unsigned int opcode;
+	unsigned int rd;
+	unsigned int rs;
+	unsigned int rt;
+	unsigned int immiediate;
 }Command;
 
+int main(int argc, char* argv[])
+{
+	int regs[REGISTER_SIZE];// initialize register
+	init_regs(regs);
+
+	int pc = 0; // initialize pc
+}
 // a function that reads memin.text and store it's content into an array.returns 1 if error occured, else returns 0.
-int read_memin(unsigned long* mem, char * address)
+int read_memin(unsigned int* mem, char * address)
 {
 	FILE *fp = fopen(address, "r"); // open memin file
 	if (!fp) { // handle error
@@ -38,10 +46,21 @@ int read_memin(unsigned long* mem, char * address)
 	return 0;
 }
 
-// this function extracts one byte from number
-unsigned short get_byte(unsigned short num, int pos)
+//this function sign extend the value of imm
+int sign_extend(int imm)
 {
-	unsigned short mask = 0x1f << (pos * 4);
+	int x = imm;
+	x = (x >> 11);
+	if (x == 0)
+		return imm;
+	else
+		return imm = 0xfffff000 |imm;
+}
+
+// this function extracts one byte from number
+unsigned int get_byte(unsigned int num, int pos)
+{
+	unsigned int mask = 0x1f << (pos * 4);
 	return (num & mask) >> (pos * 4);
 }
 
@@ -61,37 +80,37 @@ Command line_to_command(unsigned int inst)
 //basic commands and instructions
 
 //add command
-void add(short * regs, Command cmd)
+void add(int * regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] + regs[cmd.rt];
 }
 
 //sub command
-void sub(short* regs, Command cmd)
+void sub(int* regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] - regs[cmd.rt];
 }
 
 // and command.
-void and(short * regs, Command cmd)
+void and(int * regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] & regs[cmd.rt];
 }
 
 // or command.
-void or (short * regs, Command cmd)
+void or (int * regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] | regs[cmd.rt];
 }
 
 // sll command.
-void sll(short * regs, Command cmd)
+void sll(int * regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] << regs[cmd.rt];
 }
 
 //sra command
-void sra(short* regs, Command cmd)
+void sra(int* regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
 }
@@ -99,7 +118,7 @@ void sra(short* regs, Command cmd)
 //srl command*************
 
 //beq command
-int beq(short* regs, Command cmd, int pc)
+int beq(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] == regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
@@ -108,7 +127,7 @@ int beq(short* regs, Command cmd, int pc)
 }
 
 //bne command
-int bne(short* regs, Command cmd, int pc)
+int bne(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] != regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
@@ -117,7 +136,7 @@ int bne(short* regs, Command cmd, int pc)
 }
 
 //blt command
-int blt(short* regs, Command cmd, int pc)
+int blt(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] < regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
@@ -126,7 +145,7 @@ int blt(short* regs, Command cmd, int pc)
 }
 
 //bgt command
-int bgt(short* regs, Command cmd, int pc)
+int bgt(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] > regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
@@ -135,7 +154,7 @@ int bgt(short* regs, Command cmd, int pc)
 }
 
 //ble command
-int ble(short* regs, Command cmd, int pc)
+int ble(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] <= regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
@@ -144,7 +163,7 @@ int ble(short* regs, Command cmd, int pc)
 }
 
 //bge command
-int bge(short* regs, Command cmd, int pc)
+int bge(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] >= regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
@@ -153,35 +172,49 @@ int bge(short* regs, Command cmd, int pc)
 }
 
 //jal command
-int jal(short* regs, Command cmd, int pc)
+int jal(int* regs, Command cmd, int pc)
 {
 	regs[15] = pc + 1;
 	return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 }
 
 //lw command
-void lw(short * regs, Command cmd, unsigned short * mem)
+void lw(int * regs, Command cmd, unsigned int * mem)
 {
 	regs[cmd.rd] = mem[regs[cmd.rs] + regs[cmd.rt]];
 }
 
 //sw command.
-void sw(short * regs, Command cmd, unsigned short * mem)
+void sw(int * regs, Command cmd, unsigned int * mem)
 {
 	mem[regs[cmd.rs] + regs[cmd.rt]] = regs[cmd.rd];
 }
 
 //reti command
+int reti(int* io_regs, int pc)
+{
+	return pc = io_regs[7];
+}
 
 //in command
+void in(int* io_regs, int* regs, Command cmd)
+{
+	if (regs[cmd.rs] + regs[cmd.rt]<18)
+		regs[cmd.rd] = io_regs[regs[cmd.rs] + regs[cmd.rt]];
+}
 
 // out command
+void out(int* io_regs, int* regs, Command cmd)
+{
+	if (regs[cmd.rs] + regs[cmd.rt] < 18)
+		io_regs[regs[cmd.rs] + regs[cmd.rt]]= regs[cmd.rd];
+}
 
 //halt command
 
 //excution function for all the relevent opcode
 // after every excution we have to check that $zero doesn't change his value 
-int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
+int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem) {
 	switch (cmd.opcode)
 	{
 	case 0: //add opcode
@@ -285,16 +318,36 @@ int execution(short regs[], int pc, Command cmd, unsigned short * mem) {
 		pc++;
 		break;
 	}
+	case 16: //reti command
+	{
+		reti(io_regs, pc);
+		break;
+	}
+	case 17://in command
+	{
+		in(io_regs, regs, cmd);
+		break;
+	}
+	case 18://out command
+	{
+		out(io_regs, regs, cmd);
+		break;
+	}
+	case 19: //halt command, we need to exit simulator
+	{
+		pc = -1; 
+		break;
+	}
 	}
 	return pc;
 }
 
-	//A function that converts a negative number to positive in 2's compliment
-	int neg_to_pos(signed int num)
-	{
-		num = abs(num);
-		signed int mask = 0xffff;
-		num = num ^ mask; // invert all bits
-		num++; // add 1 as in 2's comp
-		return num;
-	}
+//A function that converts a negative number to positive in 2's compliment
+int neg_to_pos(signed int num)
+{
+	num = abs(num);
+	signed int mask = 0xffffffff;
+	num = num ^ mask; // invert all bits
+	num++; // add 1 as in 2's comp
+	return num;
+}
