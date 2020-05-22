@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,7 @@ int main(int argc, char* argv[])
 {
 	int regs[REGISTER_SIZE] = { 0 };// initialize register
 	int io_regs[IO_REGISTER_SIZE];// initialize input output register
+	int counter = 0; //initialize counter
 	int pc = 0; // initialize pc
 	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
 	unsigned int disk[MEM_SIZE] = { 0 };// initialize disk
@@ -30,7 +32,29 @@ int main(int argc, char* argv[])
 		printf("An Error Occured - Exiting Simulator.\n");
 		exit(1);
 	}
-
+	int counter = 0; // initialize counter
+	FILE * fp_trace; // define pointer for writing trace file
+	FILE * fp_hwregtrace;//// define pointer for writing hwregtrace file
+	fp_trace = fopen(argv[6], "w");
+	fp_hwregtrace = fopen(argv[7], 'w');
+	if (fp_trace == NULL|| fp_hwregtrace==NULL) 
+	{
+		printf("Error opening file");
+		exit(1);
+	}
+	// Execution
+	unsigned int inst; // define instruction number
+	while (pc != -1)
+	{
+		io_regs[8]=counter++;//clk cycle counter
+		inst = mem[pc];									
+		char line_for_trace[200] = { 0 };//create line for trace file
+		Command cmd = line_to_command(inst); // create Command struct
+		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
+		create_line_for_trace(line_for_trace, regs, pc, inst,cmd.immiediate);//append to trace file
+		fprintf(fp_trace, "%s\n", line_for_trace);
+		pc = execution(regs,io_regs, pc, cmd, mem); // execute instruction
+	}
 }
 // a function that reads memin.txt and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned int* mem, char * address)
@@ -460,6 +484,19 @@ void create_diskout(unsigned int * disk, char file_name[]) {
 	fclose(fp_diskout); // close file
 }
 
+void create_cycles(int counter, char file_name[]) {
+	FILE* fp_cycles;
+	fp_cycles = fopen(file_name, "w");
+	if (fp_cycles == NULL) // handle error
+	{
+		printf("error opening file");
+		exit(1);
+	}
+	char c_counter[8] = { 0 };
+	sprintf(c_counter, "%d", counter);//print the counter to file
+	fputs(c_counter, fp_cycles);
+	fclose(fp_cycles); // close file
+}
 
 // this function prepares a string to print to trace file
 void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned int inst,int imm)
@@ -504,5 +541,11 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 
 // create function that will colect data for hwregtrace
 void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int pc, unsigned int inst, int imm)
+{
 
-//timer function
+}
+//create leds
+void create_line_for_leds(char line_for_leds[], int io_regs[], int cycles)
+{
+	if()
+}
