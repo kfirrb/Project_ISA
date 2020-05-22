@@ -49,7 +49,8 @@ int main(int argc, char* argv[])
 	unsigned int inst; // define instruction number
 	while (pc != -1)
 	{
-		io_regs[8]=counter++;//clk cycle counter
+		if ((io_regs[0] && io_regs[3] || io_regs[1] && io_regs[4] || io_regs[2] && irq2[counter]))
+			handel_interrupt(io_regs, regs, disk);
 		inst = mem[pc];									
 		char line_for_trace[200] = { 0 };//create line for trace file
 		char line_for_leds[20] = { 0 };//create line for trace file
@@ -67,6 +68,7 @@ int main(int argc, char* argv[])
 			fprintf(fp_display, "%s\n", line_for_display);
 		}
 		pc = execution(regs,io_regs, pc, cmd, mem); // execute instruction
+		io_regs[8] = counter++;//clk cycle counter
 	}
 }
 // a function that reads memin.txt and store it's content into an array.returns 1 if error occured, else returns 0.
@@ -436,6 +438,36 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	return pc;
 }
 
+//timer finction
+void timer(int* io_regs)
+{
+	if (io_regs[11] == 1)
+		if (io_regs[12] == io_regs[13]) {
+			io_regs[3] = 1;
+			io_regs[12] = 0;
+		}
+		else
+			io_regs[12]++;
+}
+
+// how to handel write\read from disk
+void disk(int* disk, int * io_regs)
+{
+	switch (io_regs[14])
+	{
+	case 0:
+		break;
+	case 1:
+	{
+		io_regs[16] = disk[io_regs[15]];
+	}
+	case 2:
+	{
+		disk[io_regs[15]] = io_regs[16];
+	}
+	}
+}
+
 //A function that converts a negative number to positive in 2's compliment
 int neg_to_pos(signed int num)
 {
@@ -497,6 +529,7 @@ void create_diskout(unsigned int * disk, char file_name[]) {
 	fclose(fp_diskout); // close file
 }
 
+//create the cycles.txt file
 void create_cycles(int counter, char file_name[]) {
 	FILE* fp_cycles;
 	fp_cycles = fopen(file_name, "w");
@@ -580,4 +613,9 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds, clk_cycles); //add clk cycles to line
 	sprintf(line_for_leds + strlen(line_for_leds), " ");// add space 
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
+}
+
+void handle_interrupt(int* io_regs, int* regs,int* disk)
+{
+
 }
