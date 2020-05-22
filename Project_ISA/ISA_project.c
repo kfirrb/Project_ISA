@@ -436,6 +436,36 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	return pc;
 }
 
+//timer finction
+void timer(int* io_regs)
+{
+	if (io_regs[11] == 1)
+		if (io_regs[12] == io_regs[13]) {
+			io_regs[3] = 1;
+			io_regs[12] = 0;
+		}
+		else
+			io_regs[12]++;
+}
+
+// how to handel write\read from disk
+void disk(int* disk, int * io_regs)
+{
+	switch (io_regs[14])
+	{
+	case 0:
+		break;
+	case 1:
+	{
+		io_regs[16] = disk[io_regs[15]];
+	}
+	case 2:
+	{
+		disk[io_regs[15]] = io_regs[16];
+	}
+	}
+}
+
 //A function that converts a negative number to positive in 2's compliment
 int neg_to_pos(signed int num)
 {
@@ -497,6 +527,7 @@ void create_diskout(unsigned int * disk, char file_name[]) {
 	fclose(fp_diskout); // close file
 }
 
+//create the cycles.txt file
 void create_cycles(int counter, char file_name[]) {
 	FILE* fp_cycles;
 	fp_cycles = fopen(file_name, "w");
