@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#define IO_REGISTER_SIZE 17
+#define IO_REGISTER_SIZE 18
 #define REGISTER_SIZE 16
 #define MAX_LINE_SIZE 8
 #define MEM_SIZE 4096
@@ -22,16 +22,17 @@ int main(int argc, char* argv[])
 	int regs[REGISTER_SIZE] = { 0 };// initialize register
 	int io_regs[IO_REGISTER_SIZE];// initialize input output register
 	int pc = 0; // initialize pc
-
 	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
-	if (read_memin(mem, argv[1]) != 0) //open memin
+	unsigned int disk[MEM_SIZE] = { 0 };// initialize disk
+	unsigned int irq2[MEM_SIZE] = { 0 };// initialize irq 2
+	if (read_memin(mem, argv[1]) != 0|| read_diskin(disk, argv[2]) != 0 || read_irq2in(irq2, argv[3]) != 0) //open memin
 	{
 		printf("An Error Occured - Exiting Simulator.\n");
 		exit(1);
 	}
 
 }
-// a function that reads memin.text and store it's content into an array.returns 1 if error occured, else returns 0.
+// a function that reads memin.txt and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned int* mem, char * address)
 {
 	FILE *fp = fopen(address, "r"); // open memin file
@@ -40,7 +41,7 @@ int read_memin(unsigned int* mem, char * address)
 		return 1;
 	}
 
-	// read memin file line by line and turn it into matrix
+	// read memin file line by line and turn it into array
 	char line[MAX_LINE_SIZE];
 	int i = 0;
 	while (!feof(fp) && fgets(line, MAX_LINE_SIZE, fp))
@@ -48,6 +49,52 @@ int read_memin(unsigned int* mem, char * address)
 		if (strcmp(line, "\n") == 0 || strcmp(line, "\0") == 0) // ignore white spaces
 			continue;
 		mem[i] = strtol(line, NULL, 16);
+		i++;
+	}
+	fclose(fp); // close file
+	return 0;
+}
+
+// a function that reads diskin.txt and store it's content into an array.returns 1 if error occured, else returns 0.
+int read_diskin(unsigned int* disk, char * address)
+{
+	FILE *fp = fopen(address, "r"); // open diskin file
+	if (!fp) { // handle error
+		printf("Error opening memin file\n");
+		return 1;
+	}
+
+	// read diskin file line by line and turn it into array
+	char line[MAX_LINE_SIZE];
+	int i = 0;
+	while (!feof(fp) && fgets(line, MAX_LINE_SIZE, fp))
+	{
+		if (strcmp(line, "\n") == 0 || strcmp(line, "\0") == 0) // ignore white spaces
+			continue;
+		disk[i] = strtol(line, NULL, 16);
+		i++;
+	}
+	fclose(fp); // close file
+	return 0;
+}
+
+// a function that reads irq2in.txt and store it's content into an array.returns 1 if error occured, else returns 0.
+int read_irq2in(unsigned int* irq2, char * address)
+{
+	FILE *fp = fopen(address, "r"); // open diskin file
+	if (!fp) { // handle error
+		printf("Error opening memin file\n");
+		return 1;
+	}
+
+	// read diskin file line by line and turn it into array
+	char line[MAX_LINE_SIZE];
+	int i = 0;
+	while (!feof(fp) && fgets(line, MAX_LINE_SIZE, fp))
+	{
+		if (strcmp(line, "\n") == 0 || strcmp(line, "\0") == 0) // ignore white spaces
+			continue;
+		irq2[i] = strtol(line, NULL, 10);
 		i++;
 	}
 	fclose(fp); // close file
@@ -372,17 +419,15 @@ void create_regout(int regs[], char file_name[]) {
 		printf("error opening file");
 		exit(1);
 	}
-
 	for (int i = 2; i <= 15; i++) // print registers to file
 	{
 		fprintf(fp_regout, "%08X\n", regs[i]);
 	}
-
 	fclose(fp_regout); // close file
 }
 
 // this function creates memout file
-void create_memout(unsigned short * mem, char file_name[]) {
+void create_memout(unsigned int * mem, char file_name[]) {
 	FILE* fp_memout;
 	fp_memout = fopen(file_name, "w"); // open new file
 	if (fp_memout == NULL) // handle error
@@ -390,15 +435,31 @@ void create_memout(unsigned short * mem, char file_name[]) {
 		printf("error opening file");
 		exit(1);
 	}
-
 	for (int i = 0; i < MEM_SIZE; i++) // print memory to file
 	{
 		fprintf(fp_memout, "%08X\n", *mem);
 		mem++;
 	}
-
 	fclose(fp_memout); // close file
 }
+
+// this function creates diskout file
+void create_diskout(unsigned int * disk, char file_name[]) {
+	FILE* fp_diskout;
+	fp_diskout = fopen(file_name, "w"); // open new file
+	if (fp_diskout == NULL) // handle error
+	{
+		printf("error opening file");
+		exit(1);
+	}
+	for (int i = 0; i < MEM_SIZE; i++) // print memory to file
+	{
+		fprintf(fp_diskout, "%08X\n", *disk);
+		disk++;
+	}
+	fclose(fp_diskout); // close file
+}
+
 
 // this function prepares a string to print to trace file
 void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned int inst,int imm)
@@ -443,3 +504,5 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 
 // create function that will colect data for hwregtrace
 void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int pc, unsigned int inst, int imm)
+
+//timer function
