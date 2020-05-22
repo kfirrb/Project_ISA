@@ -21,7 +21,7 @@ typedef struct _command {
 int main(int argc, char* argv[])
 {
 	int regs[REGISTER_SIZE] = { 0 };// initialize register
-	int io_regs[IO_REGISTER_SIZE];// initialize input output register
+	int io_regs[IO_REGISTER_SIZE] = { 0 };// initialize input output register
 	int counter = 0; //initialize counter
 	int pc = 0; // initialize pc
 	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
@@ -32,12 +32,15 @@ int main(int argc, char* argv[])
 		printf("An Error Occured - Exiting Simulator.\n");
 		exit(1);
 	}
-	int counter = 0; // initialize counter
 	FILE * fp_trace; // define pointer for writing trace file
 	FILE * fp_hwregtrace;//// define pointer for writing hwregtrace file
+	FILE* fp_leds;//define pointer for writing leds file
+	FILE* fp_display;//define pointer for writing display file
 	fp_trace = fopen(argv[6], "w");
 	fp_hwregtrace = fopen(argv[7], 'w');
-	if (fp_trace == NULL|| fp_hwregtrace==NULL) 
+	fp_leds = fopen(argv[9], 'w');
+	fp_display = fopen(argv[10], 'w');
+	if (fp_trace == NULL|| fp_hwregtrace==NULL|| fp_leds==NULL|| fp_display==NULL)
 	{
 		printf("Error opening file");
 		exit(1);
@@ -49,10 +52,20 @@ int main(int argc, char* argv[])
 		io_regs[8]=counter++;//clk cycle counter
 		inst = mem[pc];									
 		char line_for_trace[200] = { 0 };//create line for trace file
+		char line_for_leds[20] = { 0 };//create line for trace file
+		char line_for_display[20] = { 0 };//create line for trace file
 		Command cmd = line_to_command(inst); // create Command struct
 		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
 		create_line_for_trace(line_for_trace, regs, pc, inst,cmd.immiediate);//append to trace file
 		fprintf(fp_trace, "%s\n", line_for_trace);
+		if ((regs[cmd.rs] + regs[cmd.rt]) == 9) {
+			create_line_for_leds(line_for_leds, regs, io_regs, counter, cmd);//append to leds file
+			fprintf(fp_leds, "%s\n", line_for_leds);
+		}
+		if ((regs[cmd.rs] + regs[cmd.rt]) == 10) {
+			create_line_for_display(line_for_display, regs, io_regs, counter, cmd);//append to display file
+			fprintf(fp_display, "%s\n", line_for_display);
+		}
 		pc = execution(regs,io_regs, pc, cmd, mem); // execute instruction
 	}
 }
@@ -544,8 +557,27 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int p
 {
 
 }
-//create leds
-void create_line_for_leds(char line_for_leds[], int io_regs[], int cycles)
+
+//create display.txt
+void create_line_for_display(char line_for_display[],int regs[], int io_regs[], int cycles, Command cmd)
 {
-	if()
+	char clk_cycles[4];
+	char curr_display[8];
+	sprintf(clk_cycles, "%08X", cycles);
+	sprintf(curr_display, "%08X", regs[cmd.rd]);
+	sprintf(line_for_display, clk_cycles); //add clk cycles to line
+	sprintf(line_for_display + strlen(line_for_display), " ");// add space 
+	sprintf(line_for_display + strlen(line_for_display), curr_display); //add current display to line
+}
+
+//create line for leds.txt file
+void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int cycles, Command cmd)
+{
+	char clk_cycles[4];
+	char curr_leds[8];
+	sprintf(clk_cycles, "%08X", cycles);
+	sprintf(curr_leds, "%08X", regs[cmd.rd]);
+	sprintf(line_for_leds, clk_cycles); //add clk cycles to line
+	sprintf(line_for_leds + strlen(line_for_leds), " ");// add space 
+	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
