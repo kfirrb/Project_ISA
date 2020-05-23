@@ -49,14 +49,14 @@ int main(int argc, char* argv[])
 	unsigned int inst; // define instruction number
 	while (pc != -1)
 	{
+		inst = mem[pc];
+		Command cmd = line_to_command(inst); // create Command struct
 		if ((io_regs[0] && io_regs[3] || io_regs[1] && io_regs[4] || io_regs[2] && io_regs[5]))
-			handel_interrupt(io_regs, regs, disk, counter);//we have irq==1 and need to handle it
-		inst = mem[pc];									
+			handel_interrupt(io_regs, regs, disk, counter);//we have irq==1 and need to handle it							
 		char line_for_trace[200] = { 0 };//create line for trace file
 		char line_for_leds[20] = { 0 };//create line for leds file
 		char line_for_display[20] = { 0 };//create line for display file
 		char line_for_hwregtrace[100] = { 0 };//create line for hwregtrace file
-		Command cmd = line_to_command(inst); // create Command struct
 		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
 		update_irq2(io_regs, irq2,counter);//update irq2status register
 		if (cmd.opcode == 17 || cmd.opcode == 18)
@@ -704,8 +704,16 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int r
 		break;
 	}
 	}
-	sprintf(temp_reg_char, "%08X", regs[cmd.rd]);
-	sprintf(line_for_hwregtrace+strlen(line_for_hwregtrace),temp_reg_char); //add counter to line
+	if (cmd.opcode == 17)
+	{
+		sprintf(temp_reg_char, "%08X", regs[cmd.rd]);
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
+	}
+	else
+	{
+		sprintf(temp_reg_char, "%08X", io_regs[regs[cmd.rs]+regs[cmd.rt]]);
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
+	}
 }
 
 //create display.txt
@@ -732,7 +740,25 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
 
-void handle_interrupt(int* io_regs, int* regs,int* disk,int* counter)
+// how to handle if irq==1
+Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem , int* disk, int * pc)
 {
 
+	if (check_reti(regs,cmd,mem))
+	{
+		int inst;
+		int i = pc;
+		io_regs[7] = i;
+		pc = io_regs[6];
+		inst = mem[io_regs[6]];
+		return cmd = line_to_command(inst);
+	}
+	return cmd;
+}
+
+// we want to check if the reti command has been done
+int check_reti(int* regs, Command cmd,int* mem)
+{
+	if (regs[cmd.opcode] == 16)
+		return 1;
 }
