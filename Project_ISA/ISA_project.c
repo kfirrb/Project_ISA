@@ -49,14 +49,21 @@ int main(int argc, char* argv[])
 	unsigned int inst; // define instruction number
 	while (pc != -1)
 	{
-		if ((io_regs[0] && io_regs[3] || io_regs[1] && io_regs[4] || io_regs[2] && irq2[counter]))
-			handel_interrupt(io_regs, regs, disk);
+		if ((io_regs[0] && io_regs[3] || io_regs[1] && io_regs[4] || io_regs[2] && io_regs[5]))
+			handel_interrupt(io_regs, regs, disk, counter);//we have irq==1 and need to handle it
 		inst = mem[pc];									
 		char line_for_trace[200] = { 0 };//create line for trace file
-		char line_for_leds[20] = { 0 };//create line for trace file
-		char line_for_display[20] = { 0 };//create line for trace file
+		char line_for_leds[20] = { 0 };//create line for leds file
+		char line_for_display[20] = { 0 };//create line for display file
+		char line_for_hwregtrace[100] = { 0 };//create line for hwregtrace file
 		Command cmd = line_to_command(inst); // create Command struct
 		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
+		update_irq2(io_regs, irq2,counter);//update irq2status register
+		if (cmd.opcode == 17 || cmd.opcode == 18)
+		{
+			create_line_for_hwregtrace(line_for_hwregtrace, io_regs, regs, counter, cmd);//append to trace file
+			fprintf(fp_trace, "%s\n", line_for_trace);
+		}
 		create_line_for_trace(line_for_trace, regs, pc, inst,cmd.immiediate);//append to trace file
 		fprintf(fp_trace, "%s\n", line_for_trace);
 		if ((regs[cmd.rs] + regs[cmd.rt]) == 9) {
@@ -468,6 +475,13 @@ void disk(int* disk, int * io_regs)
 	}
 }
 
+//function that update the irq2status register
+void update_irq2(int*io_regs, int* irq2,int counter)
+{
+	if (irq2[counter] != NULL)
+		io_regs[5] = 1;
+}
+
 //A function that converts a negative number to positive in 2's compliment
 int neg_to_pos(signed int num)
 {
@@ -586,9 +600,139 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 }
 
 // create function that will colect data for hwregtrace
-void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int pc, unsigned int inst, int imm)
+void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int regs[], int counter, Command cmd)
 {
-
+	char counter_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
+	sprintf(counter_char, "%08X", counter);
+	sprintf(line_for_hwregtrace, counter_char); //add counter to line
+	sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), " ");
+	if (cmd.opcode == 17)
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), 'READ '); //add read to line
+		switch (regs[cmd.rs]+regs[cmd.rt])
+		{
+		case 0: //add opcode
+		{
+			add(regs, cmd);
+			regs[0] = 0; // make sure $zero is zero
+			pc++;
+			break;
+		}
+		case 1: //sub opcode
+		{
+			sub(regs, cmd);
+			regs[0] = 0;
+			pc++;
+			break;
+		}
+		case 2: //and opcode
+		{
+			and (regs, cmd);
+			regs[0] = 0;
+			pc++;
+			break;
+		}
+		case 3://or opcode
+		{
+			or (regs, cmd);
+			regs[0] = 0;
+			pc++;
+			break;
+		}
+		case 4: //sll opcode
+		{
+			sll(regs, cmd);
+			regs[0] = 0;
+			pc++;
+			break;
+		}
+		case 5: //sra opcode
+		{
+			sra(regs, cmd);
+			regs[0] = 0;
+			pc++;
+			break;
+		}
+		case 6: //srl opcode***************
+		{
+		}
+		case 7: //beq opcode
+		{
+			pc = beq(regs, cmd, pc);
+			regs[0] = 0;
+			break;
+		}
+		case 8: //bne opcode
+		{
+			pc = bne(regs, cmd, pc);
+			regs[0] = 0;
+			break;
+		}
+		case 9: //blt opcode
+		{
+			pc = blt(regs, cmd, pc);
+			regs[0] = 0;
+			break;
+		}
+		case 10: //bgt opcode
+		{
+			pc = bgt(regs, cmd, pc);
+			regs[0] = 0;
+			break;
+		}
+		case 11: //ble opcode
+		{
+			pc = ble(regs, cmd, pc);
+			regs[0] = 0;
+			break;
+		}
+		case 12: //bge opcode
+		{
+			pc = bge(regs, cmd, pc);
+			regs[0] = 0;
+			break;
+		}
+		case 13: //jal opcode
+		{
+			pc = jal(regs, cmd, pc);
+			regs[0] = 0;
+			break;
+		}
+		case 14: //lw opcode
+		{
+			lw(regs, cmd, mem);
+			regs[0] = 0;
+			pc++;
+			break;
+		}
+		case 15: //sw opcode
+		{
+			sw(regs, cmd, mem);
+			regs[0] = 0;
+			pc++;
+			break;
+		}
+		case 16: //reti command
+		{
+			reti(io_regs, pc);
+			break;
+		}
+		case 17://in command
+		{
+			in(io_regs, regs, cmd);
+			pc++;
+			break;
+		}
+		case 18://out command
+		{
+			out(io_regs, regs, cmd);
+			pc++;
+			break;
+		}
+	}
+	else
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), 'WRITE ');//add write to line
 }
 
 //create display.txt
@@ -615,7 +759,7 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
 
-void handle_interrupt(int* io_regs, int* regs,int* disk)
+void handle_interrupt(int* io_regs, int* regs,int* disk,int* counter)
 {
 
 }
