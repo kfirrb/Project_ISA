@@ -476,7 +476,7 @@ void disk(int* disk, int * io_regs)
 }
 
 //function that update the irq2status register
-void update_irq2(int*io_regs, int* irq2,int counter)
+void update_irq2(int* io_regs, int* irq2,int counter)
 {
 	if (irq2[counter] != NULL)
 		io_regs[5] = 1;
@@ -608,131 +608,104 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int r
 	sprintf(line_for_hwregtrace, counter_char); //add counter to line
 	sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), " ");
 	if (cmd.opcode == 17)
-	{
-		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), 'READ '); //add read to line
-		switch (regs[cmd.rs]+regs[cmd.rt])
-		{
-		case 0: //add opcode
-		{
-			add(regs, cmd);
-			regs[0] = 0; // make sure $zero is zero
-			pc++;
-			break;
-		}
-		case 1: //sub opcode
-		{
-			sub(regs, cmd);
-			regs[0] = 0;
-			pc++;
-			break;
-		}
-		case 2: //and opcode
-		{
-			and (regs, cmd);
-			regs[0] = 0;
-			pc++;
-			break;
-		}
-		case 3://or opcode
-		{
-			or (regs, cmd);
-			regs[0] = 0;
-			pc++;
-			break;
-		}
-		case 4: //sll opcode
-		{
-			sll(regs, cmd);
-			regs[0] = 0;
-			pc++;
-			break;
-		}
-		case 5: //sra opcode
-		{
-			sra(regs, cmd);
-			regs[0] = 0;
-			pc++;
-			break;
-		}
-		case 6: //srl opcode***************
-		{
-		}
-		case 7: //beq opcode
-		{
-			pc = beq(regs, cmd, pc);
-			regs[0] = 0;
-			break;
-		}
-		case 8: //bne opcode
-		{
-			pc = bne(regs, cmd, pc);
-			regs[0] = 0;
-			break;
-		}
-		case 9: //blt opcode
-		{
-			pc = blt(regs, cmd, pc);
-			regs[0] = 0;
-			break;
-		}
-		case 10: //bgt opcode
-		{
-			pc = bgt(regs, cmd, pc);
-			regs[0] = 0;
-			break;
-		}
-		case 11: //ble opcode
-		{
-			pc = ble(regs, cmd, pc);
-			regs[0] = 0;
-			break;
-		}
-		case 12: //bge opcode
-		{
-			pc = bge(regs, cmd, pc);
-			regs[0] = 0;
-			break;
-		}
-		case 13: //jal opcode
-		{
-			pc = jal(regs, cmd, pc);
-			regs[0] = 0;
-			break;
-		}
-		case 14: //lw opcode
-		{
-			lw(regs, cmd, mem);
-			regs[0] = 0;
-			pc++;
-			break;
-		}
-		case 15: //sw opcode
-		{
-			sw(regs, cmd, mem);
-			regs[0] = 0;
-			pc++;
-			break;
-		}
-		case 16: //reti command
-		{
-			reti(io_regs, pc);
-			break;
-		}
-		case 17://in command
-		{
-			in(io_regs, regs, cmd);
-			pc++;
-			break;
-		}
-		case 18://out command
-		{
-			out(io_regs, regs, cmd);
-			pc++;
-			break;
-		}
-	}
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "READ "); //add read to line
 	else
-		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), 'WRITE ');//add write to line
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "WRITE ");//add write to line
+	switch (regs[cmd.rs] + regs[cmd.rt])
+	{
+	case 0:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq0enable "); //add register name to line
+		break;
+	}
+	case 1:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq1enable "); //add register name to line
+		break;
+	}
+	case 2:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq2enable "); //add register name to line
+		break;
+	}
+	case 3:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq0status "); //add register name to line
+		break;
+	}
+	case 4:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq1status "); //add register name to line
+		break;
+	}
+	case 5:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq2status "); //add register name to line
+		break;
+	}
+	case 6:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irqhandler "); //add register name to line
+		break;
+	}
+	case 7:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irqreturn "); //add register name to line
+		break;
+	}
+	case 8:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "clks "); //add register name to line
+		break;
+	}
+	case 9:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "leds "); //add register name to line
+		break;
+	}
+	case 10:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "display "); //add register name to line
+		break;
+	}
+	case 11:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "timerenable "); //add register name to line
+		break;
+	}
+	case 12:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "timercurrent "); //add register name to line
+		break;
+	}
+	case 13:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "timermax "); //add register name to line
+		break;
+	}
+	case 14:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "diskcmd "); //add register name to line
+		break;
+	}
+	case 15:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "disksector "); //add register name to line
+		break;
+	}
+	case 16:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "diskbuffer "); //add register name to line
+		break;
+	}
+	case 17:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "diskstatus "); //add register name to line
+		break;
+	}
+	}
+	sprintf(temp_reg_char, "%08X", regs[cmd.rd]);
+	sprintf(line_for_hwregtrace+strlen(line_for_hwregtrace),temp_reg_char); //add counter to line
 }
 
 //create display.txt
