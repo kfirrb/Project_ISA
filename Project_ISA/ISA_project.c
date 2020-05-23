@@ -49,14 +49,21 @@ int main(int argc, char* argv[])
 	unsigned int inst; // define instruction number
 	while (pc != -1)
 	{
-		if ((io_regs[0] && io_regs[3] || io_regs[1] && io_regs[4] || io_regs[2] && irq2[counter]))
-			handel_interrupt(io_regs, regs, disk);
-		inst = mem[pc];									
-		char line_for_trace[200] = { 0 };//create line for trace file
-		char line_for_leds[20] = { 0 };//create line for trace file
-		char line_for_display[20] = { 0 };//create line for trace file
+		inst = mem[pc];
 		Command cmd = line_to_command(inst); // create Command struct
+		if ((io_regs[0] && io_regs[3] || io_regs[1] && io_regs[4] || io_regs[2] && io_regs[5]))
+			handel_interrupt(io_regs, regs, disk, counter);//we have irq==1 and need to handle it							
+		char line_for_trace[200] = { 0 };//create line for trace file
+		char line_for_leds[20] = { 0 };//create line for leds file
+		char line_for_display[20] = { 0 };//create line for display file
+		char line_for_hwregtrace[100] = { 0 };//create line for hwregtrace file
 		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
+		update_irq2(io_regs, irq2,counter);//update irq2status register
+		if (cmd.opcode == 17 || cmd.opcode == 18)
+		{
+			create_line_for_hwregtrace(line_for_hwregtrace, io_regs, regs, counter, cmd);//append to trace file
+			fprintf(fp_trace, "%s\n", line_for_trace);
+		}
 		create_line_for_trace(line_for_trace, regs, pc, inst,cmd.immiediate);//append to trace file
 		fprintf(fp_trace, "%s\n", line_for_trace);
 		if ((regs[cmd.rs] + regs[cmd.rt]) == 9) {
@@ -468,6 +475,13 @@ void disk(int* disk, int * io_regs)
 	}
 }
 
+//function that update the irq2status register
+void update_irq2(int* io_regs, int* irq2,int counter)
+{
+	if (irq2[counter] != NULL)
+		io_regs[5] = 1;
+}
+
 //A function that converts a negative number to positive in 2's compliment
 int neg_to_pos(signed int num)
 {
@@ -586,9 +600,120 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 }
 
 // create function that will colect data for hwregtrace
-void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int pc, unsigned int inst, int imm)
+void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int regs[], int counter, Command cmd)
 {
-
+	char counter_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
+	sprintf(counter_char, "%08X", counter);
+	sprintf(line_for_hwregtrace, counter_char); //add counter to line
+	sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), " ");
+	if (cmd.opcode == 17)
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "READ "); //add read to line
+	else
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "WRITE ");//add write to line
+	switch (regs[cmd.rs] + regs[cmd.rt])
+	{
+	case 0:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq0enable "); //add register name to line
+		break;
+	}
+	case 1:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq1enable "); //add register name to line
+		break;
+	}
+	case 2:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq2enable "); //add register name to line
+		break;
+	}
+	case 3:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq0status "); //add register name to line
+		break;
+	}
+	case 4:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq1status "); //add register name to line
+		break;
+	}
+	case 5:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irq2status "); //add register name to line
+		break;
+	}
+	case 6:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irqhandler "); //add register name to line
+		break;
+	}
+	case 7:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "irqreturn "); //add register name to line
+		break;
+	}
+	case 8:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "clks "); //add register name to line
+		break;
+	}
+	case 9:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "leds "); //add register name to line
+		break;
+	}
+	case 10:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "display "); //add register name to line
+		break;
+	}
+	case 11:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "timerenable "); //add register name to line
+		break;
+	}
+	case 12:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "timercurrent "); //add register name to line
+		break;
+	}
+	case 13:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "timermax "); //add register name to line
+		break;
+	}
+	case 14:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "diskcmd "); //add register name to line
+		break;
+	}
+	case 15:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "disksector "); //add register name to line
+		break;
+	}
+	case 16:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "diskbuffer "); //add register name to line
+		break;
+	}
+	case 17:
+	{
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), "diskstatus "); //add register name to line
+		break;
+	}
+	}
+	if (cmd.opcode == 17)
+	{
+		sprintf(temp_reg_char, "%08X", regs[cmd.rd]);
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
+	}
+	else
+	{
+		sprintf(temp_reg_char, "%08X", io_regs[regs[cmd.rs]+regs[cmd.rt]]);
+		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
+	}
 }
 
 //create display.txt
@@ -615,7 +740,25 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
 
-void handle_interrupt(int* io_regs, int* regs,int* disk)
+// how to handle if irq==1
+Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem , int* disk, int * pc)
 {
 
+	if (check_reti(regs,cmd,mem))
+	{
+		int inst;
+		int i = pc;
+		io_regs[7] = i;
+		pc = io_regs[6];
+		inst = mem[io_regs[6]];
+		return cmd = line_to_command(inst);
+	}
+	return cmd;
+}
+
+// we want to check if the reti command has been done
+int check_reti(int* regs, Command cmd,int* mem)
+{
+	if (regs[cmd.opcode] == 16)
+		return 1;
 }
