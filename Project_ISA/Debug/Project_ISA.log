@@ -1,46 +1,4 @@
 ﻿  ISA_project.c
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(28): warning C4013: 'read_memin' undefined; assuming extern returning int
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(28): warning C4013: 'read_diskin' undefined; assuming extern returning int
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(28): warning C4013: 'read_irq2in' undefined; assuming extern returning int
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(23): warning C4101: 'io_regs': unreferenced local variable
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(38): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(208): note: see declaration of 'fopen'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(61): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(208): note: see declaration of 'fopen'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(84): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(208): note: see declaration of 'fopen'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(416): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(208): note: see declaration of 'fopen'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(432): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(208): note: see declaration of 'fopen'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(449): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(208): note: see declaration of 'fopen'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(471): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(472): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(473): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(474): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(475): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(476): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(482): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(483): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(484): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(490): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(491): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(492): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(501): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(502): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(1774): note: see declaration of 'sprintf'
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(509): fatal error C1004: unexpected end-of-file found
+c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(97): warning C4013: 'handel_interrupt' undefined; assuming extern returning int
+ISA_project.obj : error LNK2019: unresolved external symbol _handel_interrupt referenced in function _main
+C:\Users\KfirRabinovitch\source\repos\Project_ISA\Debug\Project_ISA.exe : fatal error LNK1120: 1 unresolved externals

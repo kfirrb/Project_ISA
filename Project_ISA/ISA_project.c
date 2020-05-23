@@ -19,7 +19,45 @@ typedef struct _command {
 }Command;
 
 //function decleration
-
+int read_memin(unsigned int* mem, char * address);
+int read_diskin(unsigned int* disk, char * address);
+int read_irq2in(unsigned int* irq2, char * address);
+int sign_extend(int imm);
+unsigned int get_byte(unsigned int num, int pos);
+Command line_to_command(unsigned int inst);
+void add(int * regs, Command cmd);
+void sub(int * regs, Command cmd);
+void and(int * regs, Command cmd);
+void or (int * regs, Command cmd);
+void sll(int * regs, Command cmd);
+void sra(int * regs, Command cmd);
+void srl(int * regs, Command cmd);
+int beq(int* regs, Command cmd, int pc);
+int bne(int* regs, Command cmd, int pc);
+int blt(int* regs, Command cmd, int pc);
+int bgt(int* regs, Command cmd, int pc);
+int ble(int* regs, Command cmd, int pc);
+int bge(int* regs, Command cmd, int pc);
+int jal(int* regs, Command cmd, int pc);
+void lw(int * regs, Command cmd, unsigned int * mem);
+void sw(int * regs, Command cmd, unsigned int * mem);
+int reti(int* io_regs, int pc, int reti_flag);
+void in(int* io_regs, int* regs, Command cmd);
+void out(int* io_regs, int* regs, Command cmd, int* disk);
+int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem, int * disk, int reti_flag);
+void timer(int* io_regs);
+void disk_handel(int* disk, int * io_regs);
+void update_irq2(int* io_regs, int* irq2, int counter);
+int neg_to_pos(signed int num);
+void create_regout(int regs[], char file_name[]);
+void create_memout(unsigned int * mem, char file_name[]);
+void create_diskout(unsigned int * disk, char file_name[]);
+void create_cycles(int counter, char file_name[]);
+void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned int inst, int imm);
+void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int regs[], int counter, Command cmd);
+void create_line_for_display(char line_for_display[], int regs[], int io_regs[], int cycles, Command cmd);
+void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int cycles, Command cmd);
+Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int pc, int* reti_flag);
 
 int main(int argc, char* argv[])
 {
@@ -41,9 +79,9 @@ int main(int argc, char* argv[])
 	FILE* fp_leds;//define pointer for writing leds file
 	FILE* fp_display;//define pointer for writing display file
 	fp_trace = fopen(argv[6], "w");
-	fp_hwregtrace = fopen(argv[7], 'w');
-	fp_leds = fopen(argv[9], 'w');
-	fp_display = fopen(argv[10], 'w');
+	fp_hwregtrace = fopen(argv[7], "w");
+	fp_leds = fopen(argv[9], "w");
+	fp_display = fopen(argv[10], "w");
 	if (fp_trace == NULL|| fp_hwregtrace==NULL|| fp_leds==NULL|| fp_display==NULL)
 	{
 		printf("Error opening file");
@@ -237,7 +275,7 @@ int beq(int* regs, Command cmd, int pc)
 	if (regs[cmd.rs] == regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 	else
-		pc++;
+		return pc++;
 }
 
 //bne command
@@ -246,7 +284,7 @@ int bne(int* regs, Command cmd, int pc)
 	if (regs[cmd.rs] != regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 	else
-		pc++;
+		return pc++;
 }
 
 //blt command
@@ -255,7 +293,7 @@ int blt(int* regs, Command cmd, int pc)
 	if (regs[cmd.rs] < regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 	else
-		pc++;
+		return pc++;
 }
 
 //bgt command
@@ -264,7 +302,7 @@ int bgt(int* regs, Command cmd, int pc)
 	if (regs[cmd.rs] > regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 	else
-		pc++;
+		return pc++;
 }
 
 //ble command
@@ -273,7 +311,7 @@ int ble(int* regs, Command cmd, int pc)
 	if (regs[cmd.rs] <= regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 	else
-		pc++;
+		return pc++;
 }
 
 //bge command
@@ -282,7 +320,7 @@ int bge(int* regs, Command cmd, int pc)
 	if (regs[cmd.rs] >= regs[cmd.rt])
 		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 	else
-		pc++;
+		return pc++;
 }
 
 //jal command
@@ -305,7 +343,7 @@ void sw(int * regs, Command cmd, unsigned int * mem)
 }
 
 //reti command
-int reti(int* io_regs, int pc,int * reti_flag)// flag to know the status of reti 
+int reti(int* io_regs, int pc,int reti_flag)// flag to know the status of reti 
 {
 	if (reti_flag)
 		reti_flag = 0;
@@ -337,7 +375,7 @@ void out(int* io_regs, int* regs, Command cmd,int* disk)
 
 //excution function for all the relevent opcode
 // after every excution we have to check that $zero doesn't change his value 
-int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem,int * disk, int * reti_flag) {
+int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem,int * disk, int reti_flag) {
 	switch (cmd.opcode)
 	{
 	case 0: //add opcode
@@ -506,7 +544,7 @@ void disk_handel(int* disk, int * io_regs)
 //function that update the irq2status register
 void update_irq2(int* io_regs, int* irq2,int counter)
 {
-	if (irq2[counter] != NULL)
+	if (irq2[counter])
 		io_regs[5] = 1;
 }
 
@@ -769,7 +807,7 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 }
 
 // how to handle if irq==1
-Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem , int* disk, int * pc,int* reti_flag)
+Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem , int* disk, int pc,int* reti_flag)
 {
 	if (reti_flag)// reti command didnt done yet
 	{
