@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define IO_REGISTER_SIZE 18
-#define REGISTER_SIZE 16
+#define NUMBER_REGISTER_SIZE 16
 #define MAX_LINE_SIZE 8
 #define MEM_SIZE 4096
 
@@ -61,7 +61,7 @@ Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* di
 
 int main(int argc, char* argv[])
 {
-	int regs[REGISTER_SIZE] = { 0 };// initialize register
+	int regs[NUMBER_REGISTER_SIZE] = { 0 };// initialize register
 	int io_regs[IO_REGISTER_SIZE] = { 0 };// initialize input output register
 	int counter = 0; //initialize counter
 	int pc = 0; // initialize pc
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 		inst = mem[pc];
 		Command cmd = line_to_command(inst); // create Command struct
 		if ((io_regs[0] && io_regs[3]) ||( io_regs[1] && io_regs[4]) ||( io_regs[2] && io_regs[5]))
-			handel_interrupt(io_regs, regs, cmd, mem, disk, pc,reti_flag);//we have irq==1 and need to handle it							
+			handle_interrupt(io_regs, regs, cmd, mem, disk, pc,reti_flag);//we have irq==1 and need to handle it							
 		char line_for_trace[200] = { 0 };//create line for trace file
 		char line_for_leds[20] = { 0 };//create line for leds file
 		char line_for_display[20] = { 0 };//create line for display file
@@ -129,6 +129,29 @@ int main(int argc, char* argv[])
 	fclose(fp_display);// close display file
 	return 0;
 }
+
+// how to handle if irq==1
+Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int pc, int* reti_flag)
+{
+	if (reti_flag)// reti command didnt done yet
+	{
+		if (io_regs[0] && io_regs[3])
+			timer(io_regs);
+		else if (io_regs[1] && io_regs[4])
+			disk_handel(disk, io_regs);
+		else
+		{
+			int inst;
+			int i = pc;
+			io_regs[7] = i;
+			pc = io_regs[6];
+			inst = mem[io_regs[6]];
+			return cmd = line_to_command(inst);
+		}
+	}
+	return cmd;
+}
+
 // a function that reads memin.txt and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned int* mem, char * address)
 {
@@ -806,24 +829,3 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
 
-// how to handle if irq==1
-Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem , int* disk, int pc,int* reti_flag)
-{
-	if (reti_flag)// reti command didnt done yet
-	{
-		if (io_regs[0] && io_regs[3])
-			timer(io_regs);
-		else if (io_regs[1] && io_regs[4])
-			disk_handel(disk,io_regs);
-		else
-		{
-			int inst;
-			int i = pc;
-			io_regs[7] = i;
-			pc = io_regs[6];
-			inst = mem[io_regs[6]];
-			return cmd = line_to_command(inst);
-		}
-	}
-	return cmd;
-}
