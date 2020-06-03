@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
 	unsigned int disk[MEM_SIZE] = { 0 };// initialize disk
 	unsigned int irq2[MEM_SIZE] = { 0 };// initialize irq 2
-	if (read_memin(mem, argv[1]) != 0|| read_diskin(disk, argv[2]) != 0 || read_irq2in(irq2, argv[3]) != 0) //open memin
+	if (read_memin(mem, argv[1]) != 0 || read_diskin(disk, argv[2]) != 0 || read_irq2in(irq2, argv[3]) != 0) //open memin
 	{
 		printf("An Error Occured - Exiting Simulator.\n");
 		exit(1);
@@ -180,7 +180,7 @@ int read_diskin(unsigned int* disk, char * address)
 {
 	FILE *fp = fopen(address, "r"); // open diskin file
 	if (!fp) { // handle error
-		printf("Error opening memin file\n");
+		printf("Error opening diskin file\n");
 		return 1;
 	}
 
@@ -203,7 +203,7 @@ int read_irq2in(unsigned int* irq2, char * address)
 {
 	FILE *fp = fopen(address, "r"); // open diskin file
 	if (!fp) { // handle error
-		printf("Error opening memin file\n");
+		printf("Error opening irq2in file\n");
 		return 1;
 	}
 
