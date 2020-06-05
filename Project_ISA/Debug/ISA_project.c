@@ -6,7 +6,7 @@
 
 #define IO_REGISTER_SIZE 18
 #define NUMBER_REGISTER_SIZE 16
-#define MAX_LINE_SIZE 9
+#define MAX_LINE_SIZE 8
 #define MEM_SIZE 4096
 
 //defined the struct that will help us cross the river of the project
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 		if (cmd.opcode == 17 || cmd.opcode == 18)
 		{
 			create_line_for_hwregtrace(line_for_hwregtrace, io_regs, regs, counter, cmd);//append to trace file
-			fprintf(fp_hwregtrace, "%s\n", line_for_hwregtrace);
+			fprintf(fp_trace, "%s\n", line_for_trace);
 		}
 		create_line_for_trace(line_for_trace, regs, pc, inst,cmd.immiediate);//append to trace file
 		fprintf(fp_trace, "%s\n", line_for_trace);
@@ -155,7 +155,8 @@ Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* di
 // a function that reads memin.txt and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned int* mem, char * address)
 {
-	FILE *fp = fopen(address, "r"); // open memin file
+	FILE *fp = NULL;
+	fp= fopen(address, "r"); // open memin file
 	if (!fp) { // handle error
 		printf("Error opening memin file\n");
 		return 1;
@@ -224,19 +225,19 @@ int read_irq2in(unsigned int* irq2, char * address)
 //this function sign extend the value of imm
 int sign_extend(int imm)
 {
-	int value = (0x00000FFF & imm);
-	int mask = 0x00000800;
-	if (mask & imm) {
-		value += 0xFFFFF000;
-	}
-	return value;
+	int x = imm;
+	x = (x >> 11);
+	if (x == 0)
+		return imm;
+	else
+		return imm = 0xfffff000 |imm;
 }
 
 // this function extracts one byte from number
 unsigned int get_byte(unsigned int num, int pos)
 {
-	unsigned int mask = 0xf << (pos * 4);
-	return ((num & mask) >> (pos * 4));
+	unsigned int mask = 0x1f << (pos * 4);
+	return (num & mask) >> (pos * 4);
 }
 
 // this function creates a struct Command from a string in memory
@@ -651,9 +652,9 @@ void create_cycles(int counter, char file_name[]) {
 void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned int inst,int imm)
 {
 	int i;
-	char inst_line[9];
-	char pc_char[10] = { 0 };
-	char temp_reg_char[9] = { 0 };
+	char inst_line[8];
+	char pc_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
 	sprintf(pc_char, "%08X", pc);
 	sprintf(inst_line, "%08X", inst);
 	sprintf(line_for_trace, pc_char); //add pc to line
@@ -668,7 +669,6 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 			sprintf(temp_reg_char, "%08X", sign_extend(imm));//change to hex
 			sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);//add to line
 			sprintf(line_for_trace + strlen(line_for_trace), " ");
-			continue;
 		}
 		if (regs[i] < 0)
 			temp_reg = neg_to_pos(regs[i]);
@@ -692,9 +692,9 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 // create function that will colect data for hwregtrace
 void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int regs[], int counter, Command cmd)
 {
-	char counter_char[10] = { 0 };
-	char temp_reg_char[10] = { 0 };
-	sprintf(counter_char, "%d", counter);
+	char counter_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
+	sprintf(counter_char, "%08X", counter);
 	sprintf(line_for_hwregtrace, counter_char); //add counter to line
 	sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), " ");
 	if (cmd.opcode == 17)
@@ -796,12 +796,12 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int r
 	}
 	if (cmd.opcode == 17)
 	{
-		sprintf(temp_reg_char, "%08X", io_regs[regs[cmd.rs] + regs[cmd.rt]]);
+		sprintf(temp_reg_char, "%08X", regs[cmd.rd]);
 		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
 	}
 	else
 	{
-		sprintf(temp_reg_char, "%08X",regs[cmd.rd] );
+		sprintf(temp_reg_char, "%08X", io_regs[regs[cmd.rs]+regs[cmd.rt]]);
 		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
 	}
 }
