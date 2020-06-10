@@ -6,7 +6,7 @@
 
 #define IO_REGISTER_SIZE 18
 #define NUMBER_REGISTER_SIZE 16
-#define MAX_LINE_SIZE 9
+#define MAX_LINE_SIZE 8
 #define MEM_SIZE 4096
 
 //defined the struct that will help us cross the river of the project
@@ -41,12 +41,12 @@ int bge(int* regs, Command cmd, int pc);
 int jal(int* regs, Command cmd, int pc);
 void lw(int * regs, Command cmd, unsigned int * mem);
 void sw(int * regs, Command cmd, unsigned int * mem);
-int reti(int* io_regs, int pc, int* reti_flag);
+int reti(int* io_regs, int pc, int reti_flag);
 void in(int* io_regs, int* regs, Command cmd);
-void out(int* io_regs, int* regs, Command cmd, int* disk,int* mem);
-int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem, int * disk, int* reti_flag);
+void out(int* io_regs, int* regs, Command cmd, int* disk);
+int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem, int * disk, int reti_flag);
 void timer(int* io_regs);
-void disk_handel(int* disk, int * io_regs,int* mem);
+void disk_handel(int* disk, int * io_regs);
 void update_irq2(int* io_regs, int* irq2, int counter);
 int neg_to_pos(signed int num);
 void create_regout(int regs[], char file_name[]);
@@ -57,7 +57,7 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int regs[], int counter, Command cmd);
 void create_line_for_display(char line_for_display[], int regs[], int io_regs[], int cycles, Command cmd);
 void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int cycles, Command cmd);
-Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int* pc_ptr, int* reti_flag);
+Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int pc, int* reti_flag);
 
 int main(int argc, char* argv[])
 {
@@ -65,9 +65,7 @@ int main(int argc, char* argv[])
 	int io_regs[IO_REGISTER_SIZE] = { 0 };// initialize input output register
 	int counter = 0; //initialize counter
 	int pc = 0; // initialize pc
-	int* pc_ptr = &pc;;  //initialize pc pointer
-	int reti = 1;
-	int* reti_flag=&reti; // initialize flag for interrupt to know if reti done
+	int reti_flag = 0; // initialize flag for interrupt to know if reti done
 	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
 	unsigned int disk[MEM_SIZE] = { 0 };// initialize disk
 	unsigned int irq2[MEM_SIZE] = { 0 };// initialize irq 2
@@ -84,7 +82,7 @@ int main(int argc, char* argv[])
 	fp_hwregtrace = fopen(argv[7], "w");
 	fp_leds = fopen(argv[9], "w");
 	fp_display = fopen(argv[10], "w");
-	if (fp_trace == NULL || fp_hwregtrace == NULL || fp_leds == NULL || fp_display == NULL)
+	if (fp_trace == NULL|| fp_hwregtrace==NULL|| fp_leds==NULL|| fp_display==NULL)
 	{
 		printf("Error opening file");
 		exit(1);
@@ -95,40 +93,28 @@ int main(int argc, char* argv[])
 	{
 		inst = mem[pc];
 		Command cmd = line_to_command(inst); // create Command struct
-		if ((io_regs[0] && io_regs[3]) || (io_regs[1] && io_regs[4]) || (io_regs[2] && io_regs[5]))
-		{
-			cmd = handle_interrupt(io_regs, regs, cmd, mem, disk, pc_ptr, reti_flag);//we have irq==1 and need to handle it	
-			inst = mem[pc];
-		}
+		if ((io_regs[0] && io_regs[3]) ||( io_regs[1] && io_regs[4]) ||( io_regs[2] && io_regs[5]))
+			handle_interrupt(io_regs, regs, cmd, mem, disk, pc,reti_flag);//we have irq==1 and need to handle it							
 		char line_for_trace[200] = { 0 };//create line for trace file
 		char line_for_leds[20] = { 0 };//create line for leds file
 		char line_for_display[20] = { 0 };//create line for display file
 		char line_for_hwregtrace[100] = { 0 };//create line for hwregtrace file
 		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
 		update_irq2(io_regs, irq2,counter);//update irq2status register
-		timer(io_regs);// check if timer is enable
-		if (io_regs[17] == 1)//check if disk is still busy
-			disk_handel(disk, io_regs, mem);
 		if (cmd.opcode == 17 || cmd.opcode == 18)
 		{
 			create_line_for_hwregtrace(line_for_hwregtrace, io_regs, regs, counter, cmd);//append to trace file
-			fprintf(fp_hwregtrace, "%s\n", line_for_hwregtrace);
+			fprintf(fp_trace, "%s\n", line_for_trace);
 		}
 		create_line_for_trace(line_for_trace, regs, pc, inst,cmd.immiediate);//append to trace file
 		fprintf(fp_trace, "%s\n", line_for_trace);
-		if ((regs[cmd.rs] + regs[cmd.rt]) == 9 && cmd.opcode==18) {
-			if ( regs[cmd.rd] != io_regs[regs[cmd.rs] + regs[cmd.rt]])
-			{
-				create_line_for_leds(line_for_leds, regs, io_regs, counter, cmd);//append to leds file
-				fprintf(fp_leds, "%s\n", line_for_leds);
-			}
+		if ((regs[cmd.rs] + regs[cmd.rt]) == 9) {
+			create_line_for_leds(line_for_leds, regs, io_regs, counter, cmd);//append to leds file
+			fprintf(fp_leds, "%s\n", line_for_leds);
 		}
-		if ((regs[cmd.rs] + regs[cmd.rt]) == 10 && cmd.opcode == 18) {
-			if (regs[cmd.rd] != io_regs[regs[cmd.rs] + regs[cmd.rt]])
-			{
-				create_line_for_display(line_for_display, regs, io_regs, counter, cmd);//append to display file
-				fprintf(fp_display, "%s\n", line_for_display);
-			}
+		if ((regs[cmd.rs] + regs[cmd.rt]) == 10) {
+			create_line_for_display(line_for_display, regs, io_regs, counter, cmd);//append to display file
+			fprintf(fp_display, "%s\n", line_for_display);
 		}
 		pc = execution(regs,io_regs, pc, cmd, mem,disk,reti_flag); // execute instruction
 		io_regs[8] = counter++;//clk cycle counter
@@ -145,16 +131,23 @@ int main(int argc, char* argv[])
 }
 
 // how to handle if irq==1
-Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int* pc_ptr, int* reti_flag)
+Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int pc, int* reti_flag)
 {
-	if (*reti_flag!=0)// reti command didnt done yet
+	if (reti_flag)// reti command didnt done yet
 	{
-		int inst=0;
-		*reti_flag = 0;
-		io_regs[7] = *pc_ptr;
-		*pc_ptr = io_regs[6];
-		inst = mem[io_regs[6]];
-		return cmd = line_to_command(inst);
+		if (io_regs[0] && io_regs[3])
+			timer(io_regs);
+		else if (io_regs[1] && io_regs[4])
+			disk_handel(disk, io_regs);
+		else
+		{
+			int inst;
+			int i = pc;
+			io_regs[7] = i;
+			pc = io_regs[6];
+			inst = mem[io_regs[6]];
+			return cmd = line_to_command(inst);
+		}
 	}
 	return cmd;
 }
@@ -162,7 +155,8 @@ Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* di
 // a function that reads memin.txt and store it's content into an array.returns 1 if error occured, else returns 0.
 int read_memin(unsigned int* mem, char * address)
 {
-	FILE *fp = fopen(address, "r"); // open memin file
+	FILE *fp = NULL;
+	fp= fopen(address, "r"); // open memin file
 	if (!fp) { // handle error
 		printf("Error opening memin file\n");
 		return 1;
@@ -221,7 +215,7 @@ int read_irq2in(unsigned int* irq2, char * address)
 	{
 		if (strcmp(line, "\n") == 0 || strcmp(line, "\0") == 0) // ignore white spaces
 			continue;
-		irq2[strtol(line, NULL, 10)] = 1;
+		irq2[i] = strtol(line, NULL, 10);
 		i++;
 	}
 	fclose(fp); // close file
@@ -231,19 +225,19 @@ int read_irq2in(unsigned int* irq2, char * address)
 //this function sign extend the value of imm
 int sign_extend(int imm)
 {
-	int value = (0x00000FFF & imm);
-	int mask = 0x00000800;
-	if (mask & imm) {
-		value += 0xFFFFF000;
-	}
-	return value;
+	int x = imm;
+	x = (x >> 11);
+	if (x == 0)
+		return imm;
+	else
+		return imm = 0xfffff000 |imm;
 }
 
 // this function extracts one byte from number
 unsigned int get_byte(unsigned int num, int pos)
 {
-	unsigned int mask = 0xf << (pos * 4);
-	return ((num & mask) >> (pos * 4));
+	unsigned int mask = 0x1f << (pos * 4);
+	return (num & mask) >> (pos * 4);
 }
 
 // this function creates a struct Command from a string in memory
@@ -294,87 +288,70 @@ void sll(int * regs, Command cmd)
 //sra command
 void sra(int* regs, Command cmd)
 {
-	int mask = regs[cmd.rs] >> 31 << 31 >> (regs[cmd.rt]) << 1;
-	regs[cmd.rd] = mask ^ (regs[cmd.rs] >> regs[cmd.rt]);
+	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
 }
 
 //srl command*************
-void srl(int* regs, Command cmd)
-{
-	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
-}
 
 //beq command
 int beq(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] == regs[cmd.rt])
-		return pc = regs[cmd.rd];
-	else {
-		pc++;
-		return pc;
-	}
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		return pc++;
 }
 
 //bne command
 int bne(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] != regs[cmd.rt])
-		return pc = regs[cmd.rd];
-	else {
-		pc++;
-		return pc;
-	}
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		return pc++;
 }
 
 //blt command
 int blt(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] < regs[cmd.rt])
-		return pc = regs[cmd.rd];
-	else {
-		pc++;
-		return pc;
-	}
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		return pc++;
 }
 
 //bgt command
 int bgt(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] > regs[cmd.rt])
-		return pc = regs[cmd.rd];
-	else {
-		pc++;
-		return pc;
-	}
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		return pc++;
 }
 
 //ble command
 int ble(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] <= regs[cmd.rt])
-		return pc =regs[cmd.rd];
-	else {
-		pc++;
-		return pc;
-	}
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		return pc++;
 }
 
 //bge command
 int bge(int* regs, Command cmd, int pc)
 {
 	if (regs[cmd.rs] >= regs[cmd.rt])
-		return pc = regs[cmd.rd];
-	else {
-		pc++;
-		return pc;
-	}
+		return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
+	else
+		return pc++;
 }
 
 //jal command
 int jal(int* regs, Command cmd, int pc)
 {
 	regs[15] = pc + 1;
-	return pc = regs[cmd.rd];
+	return pc = get_byte(cmd.rd, 0) + (get_byte(cmd.rd, 1) * 16) + (get_byte(cmd.rd, 2) * 16 * 16);
 }
 
 //lw command
@@ -390,13 +367,13 @@ void sw(int * regs, Command cmd, unsigned int * mem)
 }
 
 //reti command
-int reti(int* io_regs, int pc,int* reti_flag)// flag to know the status of reti 
+int reti(int* io_regs, int pc,int reti_flag)// flag to know the status of reti 
 {
-	if (*reti_flag!=0)
-		*reti_flag = 0;
+	if (reti_flag)
+		reti_flag = 0;
 	else
-		*reti_flag = 1;
-	return io_regs[7];
+		reti_flag = 1;
+	return pc = io_regs[7];
 }
 
 //in command
@@ -407,12 +384,14 @@ void in(int* io_regs, int* regs, Command cmd)
 }
 
 // out command
-void out(int* io_regs, int* regs, Command cmd,int* disk,int* mem)
+void out(int* io_regs, int* regs, Command cmd,int* disk)
 {
 	if (regs[cmd.rs] + regs[cmd.rt] < 18)
 		if ((regs[cmd.rs] + regs[cmd.rt]) == 14)
-			disk_handel(disk, io_regs,mem);
-		else 
+			disk_handel(disk, io_regs);
+		else if ((regs[cmd.rs] + regs[cmd.rt]) == 11)
+			timer(io_regs);
+		else
 			io_regs[regs[cmd.rs] + regs[cmd.rt]]= regs[cmd.rd];
 }
 
@@ -420,7 +399,7 @@ void out(int* io_regs, int* regs, Command cmd,int* disk,int* mem)
 
 //excution function for all the relevent opcode
 // after every excution we have to check that $zero doesn't change his value 
-int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem,int * disk, int* reti_flag) {
+int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem,int * disk, int reti_flag) {
 	switch (cmd.opcode)
 	{
 	case 0: //add opcode
@@ -467,10 +446,6 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	}
 	case 6: //srl opcode***************
 	{
-		srl(regs, cmd);
-		regs[0] = 0;
-		pc++;
-		break;
 	}
 	case 7: //beq opcode
 	{
@@ -530,7 +505,7 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	}
 	case 16: //reti command
 	{
-		pc = reti(io_regs, pc, reti_flag);
+		reti(io_regs, pc, reti_flag);
 		break;
 	}
 	case 17://in command
@@ -541,7 +516,7 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	}
 	case 18://out command
 	{
-		out(io_regs, regs, cmd, disk,mem);
+		out(io_regs, regs, cmd, disk);
 		pc++;
 		break;
 	}
@@ -567,46 +542,33 @@ void timer(int* io_regs)
 }
 
 // how to handel write\read from disk
-void disk_handel(int* disk, int * io_regs,int* mem)
+void disk_handel(int* disk, int * io_regs)
 {
-	io_regs[11] = 1;// enable timer	
-	io_regs[13] = 1024;// set timermax to 1024
-	io_regs[17] = 1;//disk is now busy
 	switch (io_regs[14])
 	{
 	case 0:
-	{
-		io_regs[11] = 0;// enable timer	
-		io_regs[13] = 0;// set timermax to 1024
-		io_regs[17] = 0;//disk is now busy
 		break;
-	}
 	case 1:
 	{
-		mem[io_regs[16]] = disk[io_regs[15]];
+		io_regs[16] = disk[io_regs[15]];
 	}
 	case 2:
 	{
-		disk[io_regs[15]] = mem[io_regs[16]];
+		disk[io_regs[15]] = io_regs[16];
 	}
+	int i = 0;
+	while (i < 1024)
+		i++;
 	}
-	if (io_regs[3] == 1) // disk is done his work after 1024 cycles
-	{
-		io_regs[14] = 0;
-		io_regs[17] = 0;
-		io_regs[4] = 1;
-		io_regs[11] = 0;
-		io_regs[3] = 0;
-	}
+	io_regs[14] = 0;
+	io_regs[17] = 0;
+	io_regs[4] = 1;
 }
 
 //function that update the irq2status register
 void update_irq2(int* io_regs, int* irq2,int counter)
 {
-	io_regs[5] = 0;
-	if (counter > MEM_SIZE)
-		io_regs[5] = 0;
-	else if (irq2[counter] != NULL)
+	if (irq2[counter])
 		io_regs[5] = 1;
 }
 
@@ -690,9 +652,9 @@ void create_cycles(int counter, char file_name[]) {
 void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned int inst,int imm)
 {
 	int i;
-	char inst_line[9];
-	char pc_char[10] = { 0 };
-	char temp_reg_char[9] = { 0 };
+	char inst_line[8];
+	char pc_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
 	sprintf(pc_char, "%08X", pc);
 	sprintf(inst_line, "%08X", inst);
 	sprintf(line_for_trace, pc_char); //add pc to line
@@ -707,7 +669,6 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 			sprintf(temp_reg_char, "%08X", sign_extend(imm));//change to hex
 			sprintf(line_for_trace + strlen(line_for_trace), temp_reg_char);//add to line
 			sprintf(line_for_trace + strlen(line_for_trace), " ");
-			continue;
 		}
 		if (regs[i] < 0)
 			temp_reg = neg_to_pos(regs[i]);
@@ -731,9 +692,9 @@ void create_line_for_trace(char line_for_trace[], int regs[], int pc, unsigned i
 // create function that will colect data for hwregtrace
 void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int regs[], int counter, Command cmd)
 {
-	char counter_char[10] = { 0 };
-	char temp_reg_char[10] = { 0 };
-	sprintf(counter_char, "%d", counter);
+	char counter_char[8] = { 0 };
+	char temp_reg_char[8] = { 0 };
+	sprintf(counter_char, "%08X", counter);
 	sprintf(line_for_hwregtrace, counter_char); //add counter to line
 	sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), " ");
 	if (cmd.opcode == 17)
@@ -835,12 +796,12 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int r
 	}
 	if (cmd.opcode == 17)
 	{
-		sprintf(temp_reg_char, "%08X", io_regs[regs[cmd.rs] + regs[cmd.rt]]);
+		sprintf(temp_reg_char, "%08X", regs[cmd.rd]);
 		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
 	}
 	else
 	{
-		sprintf(temp_reg_char, "%08X",regs[cmd.rd] );
+		sprintf(temp_reg_char, "%08X", io_regs[regs[cmd.rs]+regs[cmd.rt]]);
 		sprintf(line_for_hwregtrace + strlen(line_for_hwregtrace), temp_reg_char); //add data to line
 	}
 }
@@ -848,9 +809,9 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int r
 //create display.txt
 void create_line_for_display(char line_for_display[],int regs[], int io_regs[], int cycles, Command cmd)
 {
-	char clk_cycles[10];
-	char curr_display[10];
-	sprintf(clk_cycles, "%d", cycles);
+	char clk_cycles[4];
+	char curr_display[8];
+	sprintf(clk_cycles, "%08X", cycles);
 	sprintf(curr_display, "%08X", regs[cmd.rd]);
 	sprintf(line_for_display, clk_cycles); //add clk cycles to line
 	sprintf(line_for_display + strlen(line_for_display), " ");// add space 
@@ -860,9 +821,9 @@ void create_line_for_display(char line_for_display[],int regs[], int io_regs[], 
 //create line for leds.txt file
 void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int cycles, Command cmd)
 {
-	char clk_cycles[10];
-	char curr_leds[10];
-	sprintf(clk_cycles, "%d", cycles);
+	char clk_cycles[4];
+	char curr_leds[8];
+	sprintf(clk_cycles, "%08X", cycles);
 	sprintf(curr_leds, "%08X", regs[cmd.rd]);
 	sprintf(line_for_leds, clk_cycles); //add clk cycles to line
 	sprintf(line_for_leds + strlen(line_for_leds), " ");// add space 

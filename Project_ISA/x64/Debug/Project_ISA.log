@@ -1,0 +1,3 @@
+﻿  ISA_project.c
+c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(608): warning C4047: '!=': 'int' differs in levels of indirection from 'void *'
+  Project_ISA.vcxproj -> C:\Users\KfirRabinovitch\source\repos\Project_ISA\x64\Debug\Project_ISA.exe

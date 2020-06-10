@@ -1,4 +1,4 @@
 ﻿  ISA_project.c
-c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(97): warning C4013: 'handel_interrupt' undefined; assuming extern returning int
-ISA_project.obj : error LNK2019: unresolved external symbol _handel_interrupt referenced in function _main
-C:\Users\KfirRabinovitch\source\repos\Project_ISA\Debug\Project_ISA.exe : fatal error LNK1120: 1 unresolved externals
+c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(97): warning C4047: 'function': 'int *' differs in levels of indirection from 'int'
+c:\users\kfirrabinovitch\source\repos\project_isa\project_isa\isa_project.c(97): warning C4024: 'handle_interrupt': different types for formal and actual parameter 7
+  Project_ISA.vcxproj -> C:\Users\KfirRabinovitch\source\repos\Project_ISA\Debug\Project_ISA.exe
