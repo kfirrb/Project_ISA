@@ -43,10 +43,10 @@ void lw(int * regs, Command cmd, unsigned int * mem);
 void sw(int * regs, Command cmd, unsigned int * mem);
 int reti(int* io_regs, int pc, int* reti_flag);
 void in(int* io_regs, int* regs, Command cmd);
-void out(int* io_regs, int* regs, Command cmd, int* disk);
-int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem, int * disk, int reti_flag);
+void out(int* io_regs, int* regs, Command cmd, int* disk,int* mem);
+int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem, int * disk, int* reti_flag);
 void timer(int* io_regs);
-void disk_handel(int* disk, int * io_regs);
+void disk_handel(int* disk, int * io_regs,int* mem);
 void update_irq2(int* io_regs, int* irq2, int counter);
 int neg_to_pos(signed int num);
 void create_regout(int regs[], char file_name[]);
@@ -65,8 +65,9 @@ int main(int argc, char* argv[])
 	int io_regs[IO_REGISTER_SIZE] = { 0 };// initialize input output register
 	int counter = 0; //initialize counter
 	int pc = 0; // initialize pc
-	int* pc_ptr = &pc;;  //initialize pc pointer 
-	int* reti_flag = 1; // initialize flag for interrupt to know if reti done
+	int* pc_ptr = &pc;;  //initialize pc pointer
+	int reti = 1;
+	int* reti_flag=&reti; // initialize flag for interrupt to know if reti done
 	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
 	unsigned int disk[MEM_SIZE] = { 0 };// initialize disk
 	unsigned int irq2[MEM_SIZE] = { 0 };// initialize irq 2
@@ -105,6 +106,9 @@ int main(int argc, char* argv[])
 		char line_for_hwregtrace[100] = { 0 };//create line for hwregtrace file
 		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
 		update_irq2(io_regs, irq2,counter);//update irq2status register
+		timer(io_regs);// check if timer is enable
+		if (io_regs[17] == 1)//check if disk is still busy
+			disk_handel(disk, io_regs, mem);
 		if (cmd.opcode == 17 || cmd.opcode == 18)
 		{
 			create_line_for_hwregtrace(line_for_hwregtrace, io_regs, regs, counter, cmd);//append to trace file
@@ -143,21 +147,14 @@ int main(int argc, char* argv[])
 // how to handle if irq==1
 Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int* pc_ptr, int* reti_flag)
 {
-	if (reti_flag!=0)// reti command didnt done yet
+	if (*reti_flag!=0)// reti command didnt done yet
 	{
-		if (io_regs[0] && io_regs[3])
-			timer(io_regs);
-		else if (io_regs[1] && io_regs[4])
-			disk_handel(disk, io_regs);
-		else
-		{
-			int inst=0;
-			reti_flag = 0;
-			io_regs[7] = *pc_ptr;
-			*pc_ptr = io_regs[6];
-			inst = mem[io_regs[6]];
-			return cmd = line_to_command(inst);
-		}
+		int inst=0;
+		*reti_flag = 0;
+		io_regs[7] = *pc_ptr;
+		*pc_ptr = io_regs[6];
+		inst = mem[io_regs[6]];
+		return cmd = line_to_command(inst);
 	}
 	return cmd;
 }
@@ -297,13 +294,14 @@ void sll(int * regs, Command cmd)
 //sra command
 void sra(int* regs, Command cmd)
 {
-	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
+	int mask = regs[cmd.rs] >> 31 << 31 >> (regs[cmd.rt]) << 1;
+	regs[cmd.rd] = mask ^ (regs[cmd.rs] >> regs[cmd.rt]);
 }
 
 //srl command*************
-void srl(int* regs, Command cmd) {
-	int mask = regs[cmd.rs] >> 31 << 31 >> (regs[cmd.rt]) << 1;
-	regs[cmd.rd] = mask ^ (regs[cmd.rs] >> regs[cmd.rt]);
+void srl(int* regs, Command cmd)
+{
+	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
 }
 
 //beq command
@@ -394,10 +392,10 @@ void sw(int * regs, Command cmd, unsigned int * mem)
 //reti command
 int reti(int* io_regs, int pc,int* reti_flag)// flag to know the status of reti 
 {
-	if (reti_flag)
-		reti_flag = 0;
+	if (*reti_flag!=0)
+		*reti_flag = 0;
 	else
-		reti_flag = 1;
+		*reti_flag = 1;
 	return io_regs[7];
 }
 
@@ -409,14 +407,12 @@ void in(int* io_regs, int* regs, Command cmd)
 }
 
 // out command
-void out(int* io_regs, int* regs, Command cmd,int* disk)
+void out(int* io_regs, int* regs, Command cmd,int* disk,int* mem)
 {
 	if (regs[cmd.rs] + regs[cmd.rt] < 18)
 		if ((regs[cmd.rs] + regs[cmd.rt]) == 14)
-			disk_handel(disk, io_regs);
-		else if ((regs[cmd.rs] + regs[cmd.rt]) == 11)
-			timer(io_regs);
-		else
+			disk_handel(disk, io_regs,mem);
+		else 
 			io_regs[regs[cmd.rs] + regs[cmd.rt]]= regs[cmd.rd];
 }
 
@@ -424,7 +420,7 @@ void out(int* io_regs, int* regs, Command cmd,int* disk)
 
 //excution function for all the relevent opcode
 // after every excution we have to check that $zero doesn't change his value 
-int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem,int * disk, int reti_flag) {
+int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem,int * disk, int* reti_flag) {
 	switch (cmd.opcode)
 	{
 	case 0: //add opcode
@@ -545,7 +541,7 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	}
 	case 18://out command
 	{
-		out(io_regs, regs, cmd, disk);
+		out(io_regs, regs, cmd, disk,mem);
 		pc++;
 		break;
 	}
@@ -571,27 +567,37 @@ void timer(int* io_regs)
 }
 
 // how to handel write\read from disk
-void disk_handel(int* disk, int * io_regs)
+void disk_handel(int* disk, int * io_regs,int* mem)
 {
+	io_regs[11] = 1;// enable timer	
+	io_regs[13] = 1024;// set timermax to 1024
+	io_regs[17] = 1;//disk is now busy
 	switch (io_regs[14])
 	{
 	case 0:
+	{
+		io_regs[11] = 0;// enable timer	
+		io_regs[13] = 0;// set timermax to 1024
+		io_regs[17] = 0;//disk is now busy
 		break;
+	}
 	case 1:
 	{
-		io_regs[16] = disk[io_regs[15]];
+		mem[io_regs[16]] = disk[io_regs[15]];
 	}
 	case 2:
 	{
-		disk[io_regs[15]] = io_regs[16];
+		disk[io_regs[15]] = mem[io_regs[16]];
 	}
-	int i = 0;
-	while (i < 1024)
-		i++;
 	}
-	io_regs[14] = 0;
-	io_regs[17] = 0;
-	io_regs[4] = 1;
+	if (io_regs[3] == 1) // disk is done his work after 1024 cycles
+	{
+		io_regs[14] = 0;
+		io_regs[17] = 0;
+		io_regs[4] = 1;
+		io_regs[11] = 0;
+		io_regs[3] = 0;
+	}
 }
 
 //function that update the irq2status register
