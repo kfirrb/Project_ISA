@@ -255,6 +255,14 @@ Command line_to_command(unsigned int inst)
 	cmd.rs = get_byte(inst, 4);
 	cmd.rt = get_byte(inst, 3);
 	cmd.immiediate = (get_byte(inst, 2)*16*16) + (get_byte(inst, 1)*16) + get_byte(inst, 0);
+	if (cmd.opcode > 19) //how to handle error opcode that not exist
+	{
+		cmd.opcode = 0;
+		cmd.rd = 0;
+		cmd.rs = 0;
+		cmd.rt = 0;
+		cmd.immiediate = 0;
+	}
 	return cmd;
 }
 
@@ -536,12 +544,14 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	case 17://in command
 	{
 		in(io_regs, regs, cmd);
+		regs[0] = 0;
 		pc++;
 		break;
 	}
 	case 18://out command
 	{
 		out(io_regs, regs, cmd, disk,mem);
+		regs[0] = 0;
 		pc++;
 		break;
 	}
