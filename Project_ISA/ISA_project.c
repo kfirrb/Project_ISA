@@ -58,6 +58,7 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int r
 void create_line_for_display(char line_for_display[], int regs[], int io_regs[], int cycles, Command cmd);
 void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int cycles, Command cmd);
 Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int* pc_ptr, int* reti_flag);
+Command put_stall(Command cmd);
 
 int main(int argc, char* argv[])
 {
@@ -255,14 +256,24 @@ Command line_to_command(unsigned int inst)
 	cmd.rs = get_byte(inst, 4);
 	cmd.rt = get_byte(inst, 3);
 	cmd.immiediate = (get_byte(inst, 2)*16*16) + (get_byte(inst, 1)*16) + get_byte(inst, 0);
-	if (cmd.opcode > 19) //how to handle error opcode that not exist
+	if (cmd.opcode < 13|| cmd.opcode==14 ||cmd.opcode==17)//if opcode arithmetic or branch we need to check few expations
 	{
-		cmd.opcode = 0;
-		cmd.rd = 0;
-		cmd.rs = 0;
-		cmd.rt = 0;
-		cmd.immiediate = 0;
+		if (cmd.rd > 15 || cmd.rt > 15 || cmd.rs > 15 || cmd.rd ==1)
+			cmd = put_stall(cmd);
 	}
+	if (cmd.opcode==13)// check only cmd.rd
+	{
+		if (cmd.rd > 15)
+			cmd = put_stall(cmd);
+	}
+	if (cmd.opcode == 15|| cmd.opcode == 18)//if opcode sw check only registers
+	{
+		if (cmd.rd > 15 || cmd.rt > 15 || cmd.rs > 15)
+			cmd = put_stall(cmd);
+	}
+	if (cmd.opcode > 19) //how to handle error opcode that not exist
+		cmd = put_stall(cmd);
+
 	return cmd;
 }
 
@@ -306,7 +317,7 @@ void sra(int* regs, Command cmd)
 	regs[cmd.rd] = mask ^ (regs[cmd.rs] >> regs[cmd.rt]);
 }
 
-//srl command*************
+//srl command
 void srl(int* regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
@@ -879,3 +890,12 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
 
+Command put_stall(Command cmd)
+{
+	cmd.opcode = 0;
+	cmd.rd = 0;
+	cmd.rs = 0;
+	cmd.rt = 0;
+	cmd.immiediate = 0;
+	return cmd;
+}
