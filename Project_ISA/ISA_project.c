@@ -8,7 +8,7 @@
 #define NUMBER_REGISTER_SIZE 16
 #define MAX_LINE_SIZE 9
 #define MEM_SIZE 4096
-
+#define MAX_DISK 16384
 //defined the struct that will help us cross the river of the project
 typedef struct _command {
 	unsigned int opcode;
@@ -58,6 +58,7 @@ void create_line_for_hwregtrace(char line_for_hwregtrace[], int io_regs[], int r
 void create_line_for_display(char line_for_display[], int regs[], int io_regs[], int cycles, Command cmd);
 void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int cycles, Command cmd);
 Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* disk, int* pc_ptr, int* reti_flag);
+Command put_stall(Command cmd);
 
 int main(int argc, char* argv[])
 {
@@ -69,7 +70,7 @@ int main(int argc, char* argv[])
 	int reti = 1;
 	int* reti_flag=&reti; // initialize flag for interrupt to know if reti done
 	unsigned int mem[MEM_SIZE] = { 0 }; // initialize memory
-	unsigned int disk[MEM_SIZE] = { 0 };// initialize disk
+	unsigned int disk[MAX_DISK] = { 0 };// initialize disk
 	unsigned int irq2[MEM_SIZE] = { 0 };// initialize irq 2
 	if (read_memin(mem, argv[1]) != 0 || read_diskin(disk, argv[2]) != 0 || read_irq2in(irq2, argv[3]) != 0) //open memin
 	{
@@ -150,11 +151,11 @@ Command handle_interrupt(int* io_regs, int* regs, Command cmd, int* mem, int* di
 	if (*reti_flag!=0)// reti command didnt done yet
 	{
 		int inst=0;
-		*reti_flag = 0;
+		*reti_flag = 0;// now busy
 		io_regs[7] = *pc_ptr;
 		*pc_ptr = io_regs[6];
 		inst = mem[io_regs[6]];
-		return cmd = line_to_command(inst);
+		return cmd = line_to_command(inst);// return command
 	}
 	return cmd;
 }
@@ -255,6 +256,30 @@ Command line_to_command(unsigned int inst)
 	cmd.rs = get_byte(inst, 4);
 	cmd.rt = get_byte(inst, 3);
 	cmd.immiediate = (get_byte(inst, 2)*16*16) + (get_byte(inst, 1)*16) + get_byte(inst, 0);
+	//handle all out of bounds future problems
+	if (cmd.opcode < 7|| cmd.opcode==14 ||cmd.opcode==17)//if opcode arithmetic we need to check few expations
+	{
+		if (cmd.rd > 15 || cmd.rt > 15 || cmd.rs > 15 || cmd.rd ==1)
+			cmd = put_stall(cmd);
+	}
+	if (cmd.opcode > 6 && cmd.opcode < 13)//if opcode branch we need to check few expations
+	{
+		if (cmd.rd > 15 || cmd.rt > 15 || cmd.rs > 15)
+			cmd = put_stall(cmd);
+	}
+	if (cmd.opcode==13)// check only cmd.rd
+	{
+		if (cmd.rd > 15)
+			cmd = put_stall(cmd);
+	}
+	if (cmd.opcode == 15|| cmd.opcode == 18)//if opcode sw check only registers
+	{
+		if (cmd.rd > 15 || cmd.rt > 15 || cmd.rs > 15)
+			cmd = put_stall(cmd);
+	}
+	if (cmd.opcode > 19) //how to handle error opcode that not exist
+		cmd = put_stall(cmd);
+
 	return cmd;
 }
 
@@ -298,7 +323,7 @@ void sra(int* regs, Command cmd)
 	regs[cmd.rd] = mask ^ (regs[cmd.rs] >> regs[cmd.rt]);
 }
 
-//srl command*************
+//srl command
 void srl(int* regs, Command cmd)
 {
 	regs[cmd.rd] = regs[cmd.rs] >> regs[cmd.rt];
@@ -411,7 +436,10 @@ void out(int* io_regs, int* regs, Command cmd,int* disk,int* mem)
 {
 	if (regs[cmd.rs] + regs[cmd.rt] < 18)
 		if ((regs[cmd.rs] + regs[cmd.rt]) == 14)
-			disk_handel(disk, io_regs,mem);
+		{
+			io_regs[14] = regs[cmd.rd];
+			disk_handel(disk, io_regs, mem);
+		}
 		else 
 			io_regs[regs[cmd.rs] + regs[cmd.rt]]= regs[cmd.rd];
 }
@@ -536,12 +564,14 @@ int execution(int regs[], int io_regs[], int pc, Command cmd, unsigned int * mem
 	case 17://in command
 	{
 		in(io_regs, regs, cmd);
+		regs[0] = 0;
 		pc++;
 		break;
 	}
 	case 18://out command
 	{
 		out(io_regs, regs, cmd, disk,mem);
+		regs[0] = 0;
 		pc++;
 		break;
 	}
@@ -569,26 +599,31 @@ void timer(int* io_regs)
 // how to handel write\read from disk
 void disk_handel(int* disk, int * io_regs,int* mem)
 {
-	io_regs[11] = 1;// enable timer	
-	io_regs[13] = 1024;// set timermax to 1024
-	io_regs[17] = 1;//disk is now busy
-	switch (io_regs[14])
+	if (io_regs[17] == 0)
 	{
-	case 0:
-	{
-		io_regs[11] = 0;// enable timer	
-		io_regs[13] = 0;// set timermax to 1024
-		io_regs[17] = 0;//disk is now busy
-		break;
-	}
-	case 1:
-	{
-		mem[io_regs[16]] = disk[io_regs[15]];
-	}
-	case 2:
-	{
-		disk[io_regs[15]] = mem[io_regs[16]];
-	}
+		io_regs[11] = 1;// enable timer	
+		io_regs[13] = 1024;// set timermax to 1024
+		io_regs[17] = 1;//disk is now busy
+		switch (io_regs[14])
+		{
+		case 0:
+		{
+			io_regs[11] = 0;// disable timer	
+			io_regs[13] = 0;// set timermax to 0
+			io_regs[17] = 0;//disk is now free
+			break;
+		}
+		case 1:
+		{
+			mem[io_regs[16]] = disk[io_regs[15]];
+			break;
+		}
+		case 2:
+		{
+			disk[io_regs[15]] = mem[io_regs[16]];
+			break;
+		}
+		}
 	}
 	if (io_regs[3] == 1) // disk is done his work after 1024 cycles
 	{
@@ -869,3 +904,12 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
 
+Command put_stall(Command cmd)
+{
+	cmd.opcode = 0;
+	cmd.rd = 0;
+	cmd.rs = 0;
+	cmd.rt = 0;
+	cmd.immiediate = 0;
+	return cmd;
+}
