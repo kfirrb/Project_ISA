@@ -1,7 +1,0 @@
-5 WRITE irqhandler 0000000F
-10 WRITE irq1enable 00000000
-11 READ diskstatus 00000000
-13 WRITE diskbuffer 00000400
-14 WRITE disksector 00000000
-15 WRITE diskcmd 00000001
-21 WRITE irq1enable 00000001
