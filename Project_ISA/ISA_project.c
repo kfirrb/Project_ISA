@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 		char line_for_trace[200] = { 0 };//create line for trace file
 		char line_for_leds[20] = { 0 };//create line for leds file
 		char line_for_display[20] = { 0 };//create line for display file
-		char line_for_hwregtrace[100] = { 0 };//create line for hwregtrace file
+		char line_for_hwregtrace [100] = { 0 };//create line for hwregtrace file
 		regs[1] = sign_extend(cmd.immiediate);//first we do sign extend to immiediate
 		update_irq2(io_regs, irq2,counter);//update irq2status register
 		timer(io_regs);// check if timer is enable
@@ -283,7 +283,6 @@ Command line_to_command(unsigned int inst)
 	return cmd;
 }
 
-
 //basic commands and instructions
 
 //add command
@@ -443,8 +442,6 @@ void out(int* io_regs, int* regs, Command cmd,int* disk,int* mem)
 		else 
 			io_regs[regs[cmd.rs] + regs[cmd.rt]]= regs[cmd.rd];
 }
-
-//halt command
 
 //excution function for all the relevent opcode
 // after every excution we have to check that $zero doesn't change his value 
@@ -615,12 +612,16 @@ void disk_handel(int* disk, int * io_regs,int* mem)
 		}
 		case 1:
 		{
-			mem[io_regs[16]] = disk[io_regs[15]];
+			int i = 0;
+			for (i=0;i<128;i++)
+				mem[io_regs[16]+i] = disk[(128*io_regs[15])+i];
 			break;
 		}
 		case 2:
 		{
-			disk[io_regs[15]] = mem[io_regs[16]];
+			int i = 0;
+			for (i = 0; i < 128; i++)
+				disk[(128*io_regs[15])+i] = mem[io_regs[16]+i];
 			break;
 		}
 		}
@@ -904,6 +905,7 @@ void create_line_for_leds(char line_for_leds[], int regs[], int io_regs[], int c
 	sprintf(line_for_leds + strlen(line_for_leds), curr_leds); //add leds to line
 }
 
+// put stall when the comaand is not valid
 Command put_stall(Command cmd)
 {
 	cmd.opcode = 0;
