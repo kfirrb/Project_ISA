@@ -404,13 +404,15 @@ int jal(int* regs, Command cmd, int pc)
 //lw command
 void lw(int * regs, Command cmd, unsigned int * mem)
 {
-	regs[cmd.rd] = mem[regs[cmd.rs] + regs[cmd.rt]];
+	if (regs[cmd.rs] + regs[cmd.rt]<MEM_SIZE)
+		regs[cmd.rd] = mem[regs[cmd.rs] + regs[cmd.rt]];
 }
 
 //sw command.
 void sw(int * regs, Command cmd, unsigned int * mem)
 {
-	mem[regs[cmd.rs] + regs[cmd.rt]] = regs[cmd.rd];
+	if (regs[cmd.rs] + regs[cmd.rt] < MEM_SIZE)
+		mem[regs[cmd.rs] + regs[cmd.rt]] = regs[cmd.rd];
 }
 
 //reti command
@@ -613,15 +615,21 @@ void disk_handel(int* disk, int * io_regs,int* mem)
 		case 1:
 		{
 			int i = 0;
-			for (i=0;i<128;i++)
-				mem[io_regs[16]+i] = disk[(128*io_regs[15])+i];
+			for (i = 0; i < 128; i++)
+			{
+				if((io_regs[16] + i<MEM_SIZE) && (((128 * io_regs[15]) + i)<MAX_DISK))
+					mem[io_regs[16] + i] = disk[(128 * io_regs[15]) + i];
+			}
 			break;
 		}
 		case 2:
 		{
 			int i = 0;
 			for (i = 0; i < 128; i++)
-				disk[(128*io_regs[15])+i] = mem[io_regs[16]+i];
+			{
+				if ((io_regs[16] + i < MEM_SIZE) && (((128 * io_regs[15]) + i) < MAX_DISK))
+					disk[(128 * io_regs[15]) + i] = mem[io_regs[16] + i];
+			}
 			break;
 		}
 		}
